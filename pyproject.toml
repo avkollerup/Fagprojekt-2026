@@ -38,17 +38,6 @@ dev = [
     "mkdocstrings-python==2.0.1",
 ]
 
-
-[tool.uv.sources]
-torchvision = [
-    { index = "pytorch-cpu" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
 [tool.ruff]
 line-length = 120
 
