@@ -2,7 +2,8 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, DynamicCache
 
-model_id = "meta-llama/Llama-3.1-8B-Instruct"
+# model_id = "meta-llama/Llama-3.1-8B-Instruct"
+model_id = "meta-llama/Llama-3.1-8B"
 
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
@@ -11,12 +12,15 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-prompt = "What is 2+2?"
+print(torch.cuda.get_device_name(0))
+print(model.device)
+
+prompt = "Calculate 2+2 and then stop answering"
 inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
 outputs = model.generate(
     **inputs, 
-    max_new_tokens=50, 
+    max_new_tokens=100, 
     use_cache=True, 
     return_dict_in_generate=True,
 )
