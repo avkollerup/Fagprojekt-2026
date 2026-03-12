@@ -55,9 +55,14 @@ started with Machine Learning Operations (MLOps).
 
 ````
 
+# Step-by-step guide til at åbne repo i HPC:
+1. Åbn launch.bat
+2. Wait for dispatch
+3. I terminalen: sh start_tunnel.sh
+3. Åben VSCode
+4. Connect til tunnel
+5. Open folder til projektfolder (inde i ~work3/STUDIENUMMER/Fagprojekt-2026)
 
-# cd
-Group-24-Bayesian-Optimization
 
 # To add a new package to the environment, run the following in the terminal:
 1. uv add [package name] 
