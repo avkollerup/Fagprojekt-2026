@@ -12,6 +12,7 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 print("-------------- MODEL DEVICE --------------")
+# Bare et tjek at den rent faktisk kører på GPU haha
 print(torch.cuda.get_device_name(0))
 print(model.device)
 
@@ -27,6 +28,14 @@ inputs = tokenizer.apply_chat_template(
     return_tensors="pt",
 ).to(model.device)
 
+inputs = tokenizer.apply_chat_template(
+    messages,
+    add_generation_prompt=True,
+    tokenize=True,
+    return_tensors="pt",
+).to(model.device)
+
+# Genererer output tokens (LLM'ens svar)
 outputs = model.generate(
     **inputs, 
     max_new_tokens=100, 
