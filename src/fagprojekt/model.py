@@ -13,7 +13,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 print("-------------- MODEL DEVICE --------------")
 # Bare et tjek at den rent faktisk kører på GPU haha
-print(torch.cuda.get_device_name(0))
+if torch.cuda.is_available():
+    print(torch.cuda.get_device_name(0))
 print(model.device)
 
 messages = [
@@ -28,17 +29,10 @@ inputs = tokenizer.apply_chat_template(
     return_tensors="pt",
 ).to(model.device)
 
-inputs = tokenizer.apply_chat_template(
-    messages,
-    add_generation_prompt=True,
-    tokenize=True,
-    return_tensors="pt",
-).to(model.device)
-
 # Genererer output tokens (LLM'ens svar)
 outputs = model.generate(
     **inputs, 
-    max_new_tokens=100, 
+    max_new_tokens=256, 
     eos_token_id=tokenizer.eos_token_id, # Indsæt stop-token
     pad_token_id=tokenizer.eos_token_id,
     use_cache=True, 
@@ -89,10 +83,10 @@ print()
 
 # Indsætte KV cachen igen:
 # Der er et argument, der hedder past_key_values!!
-# past_key_values = DynamicCache(config=model.config)
-past_key_values = outputs.past_key_values
-outputs = model(**inputs, past_key_values=past_key_values, use_cache=True)
-print(outputs)
-print(outputs.logits)
-# Ved ikke helt hvad den genererer og hvordan man prompter igen ved at bruge gammel KV cache
+# past_key_values = outputs.past_key_values
+# # outputs = model(**inputs, past_key_values=past_key_values, use_cache=True)
+# # print(outputs)
+# # print(outputs.logits)
+
+# Ved ikke helt hvad den genererer og hvordan man genererer nye tokens igen ved at bruge gammel KV cache
 
