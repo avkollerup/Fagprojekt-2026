@@ -1,29 +1,48 @@
+
+import os
+import shutil
 from pathlib import Path
+from dotenv import load_dotenv
+from huggingface_hub import snapshot_download
 
-import typer
-from torch.utils.data import Dataset
+load_dotenv()
+ROOT_DIR = Path("document-haystack")
 
+# MAKE A .env file in the root of the REPO with the HUGGINGFACE_HUB_TOKEN
+def download_data():
+    if ROOT_DIR.exists() and any(ROOT_DIR.iterdir()):
+        print(f"Skipping download, folder already exists: {ROOT_DIR}")
+        return
 
-class MyDataset(Dataset):
-    """My custom dataset."""
+    snapshot_download(
+        "AmazonScience/document-haystack",
+        repo_type="dataset",
+        token=os.environ["HUGGINGFACE_HUB_TOKEN"],
+        local_dir=str(ROOT_DIR),
+    )
 
-    def __init__(self, data_path: Path) -> None:
-        self.data_path = data_path
+def clean_data():
+    keep_name = "Text_TextNeedles"
 
-    def __len__(self) -> int:
-        """Return the length of the dataset."""
+    if not ROOT_DIR.exists():
+        print(f"Nothing to clean, folder does not exist: {ROOT_DIR}")
+        return
 
-    def __getitem__(self, index: int):
-        """Return a given sample from the dataset."""
+    # Delete all inner-most folders not called "Text_TextNeedles""
+    for current_root, subdirs, _ in os.walk(ROOT_DIR, topdown=False):
+        current_path = Path(current_root)
+        if not subdirs and current_path.name != keep_name:
+            shutil.rmtree(current_path)
+            print(f"Deleted: {current_path}")
 
-    def preprocess(self, output_folder: Path) -> None:
-        """Preprocess the raw data and save it to the output folder."""
-
-def preprocess(data_path: Path, output_folder: Path) -> None:
-    print("Preprocessing data...")
-    dataset = MyDataset(data_path)
-    dataset.preprocess(output_folder)
-
+    # Delete all files with "ImageNeedles" in name
+    for current_root, _, files in os.walk(ROOT_DIR):
+        for file_name in files:
+            if "ImageNeedles" in file_name:
+                file_path = Path(current_root) / file_name
+                file_path.unlink()
+                print(f"Deleted file: {file_path}")
 
 if __name__ == "__main__":
-    typer.run(preprocess)
+    download_data()
+    clean_data()

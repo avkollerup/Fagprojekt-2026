@@ -94,3 +94,16 @@ Other: .venv/scripts/activate
 # To get content
 1. git pull
 2. uv sync
+
+
+# To get the data and clean it
+
+1. Make a huggingface API token on: https://huggingface.co/settings/tokens
+2. COPY THE API KEY
+3. Make a .env file in the root of the repository.
+It should contain the following:
+HUGGINGFACE_HUB_TOKEN={your huggingface API token}
+4. Run the data.py file
+
+
+
