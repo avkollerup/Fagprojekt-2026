@@ -59,7 +59,7 @@ print(f"{len(KV_cache)} transformer layers in the model") # 32 tranformer layers
 # Fra https://huggingface.co/docs/transformers/v5.3.0/en/internal/generation_utils#transformers.DynamicCache
 # transformers.DynamicCache stores the key and value states as a list of CacheLayer, one for each layer. 
 layer_idx = 0
-layer = KV_cache[0]
+layer = KV_cache[layer_idx]
 key = layer.keys
 value = layer.values
 
