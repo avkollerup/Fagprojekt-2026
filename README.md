@@ -102,7 +102,7 @@ Other: .venv/scripts/activate
 2. COPY THE API KEY
 3. Make a .env file in the root of the repository.
 It should contain the following:
-HUGGINGFACE_HUB_TOKEN={your huggingface API token}
+HUGGINGFACE_HUB_TOKEN=your huggingface API token
 4. Run the data.py file
 
 
