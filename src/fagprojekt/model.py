@@ -1,92 +1,152 @@
 # Load model directly
+import math
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, DynamicCache
 
-model_id = "meta-llama/Llama-3.1-8B-Instruct"
+def load_model():
+    model_id = "meta-llama/Llama-3.1-8B-Instruct"
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    dtype=torch.float16,
-    device_map="auto",
-)
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        # attn_implementation="eager",
+        dtype=torch.float16,
+        device_map="auto",
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-print("-------------- MODEL DEVICE --------------")
-# Bare et tjek at den rent faktisk kører på GPU haha
-if torch.cuda.is_available():
-    print(torch.cuda.get_device_name(0))
-print(model.device)
+    print("-------------- MODEL DEVICE --------------")
+    # Bare et tjek at den rent faktisk kører på GPU haha
+    if torch.cuda.is_available():
+        print(torch.cuda.get_device_name(0))
+    print(model.device)
 
-messages = [
-    {"role": "system", "content": "You are a friendly chatbot who always responds in the style of a pirate",}, # Besked til modellen om hvordan den skal opføre sig
-    {"role": "user", "content": "How many helicopters can a human eat in one sitting?"}, # Besked fra user (os)
- ]
+    return model, tokenizer
 
-inputs = tokenizer.apply_chat_template(
-    messages,
-    add_generation_prompt=True,
-    tokenize=True,
-    return_tensors="pt",
-).to(model.device)
+def get_response(model, tokenizer, messages):
+    inputs = tokenizer.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_tensors="pt",
+    ).to(model.device)
 
-# Genererer output tokens (LLM'ens svar)
-outputs = model.generate(
-    **inputs, 
-    max_new_tokens=256, 
-    eos_token_id=tokenizer.eos_token_id, # Indsæt stop-token
-    pad_token_id=tokenizer.eos_token_id,
-    use_cache=True, 
-    return_dict_in_generate=True,
-)
+    # Genererer output tokens (LLM'ens svar)
+    outputs = model.generate(
+        **inputs, 
+        max_new_tokens=256, 
+        eos_token_id=tokenizer.eos_token_id, # Indsæt stop-token
+        pad_token_id=tokenizer.eos_token_id,
+        # output_attentions=True,
+        use_cache=True, 
+        return_dict_in_generate=True,
+    )
+    generated_tokens = outputs.sequences[0]
+    return inputs, outputs, generated_tokens
 
-# outputs.sequences contains prompts plus generated tokens
-# Print system prompt and reply
-generated_tokens = outputs.sequences[0]
-print("-------------- SYSTEM PROMPT AND REPLY --------------")
-print(tokenizer.decode(generated_tokens, skip_special_tokens=True))
 
-# Print only reply
-input_length = inputs.input_ids.shape[1]
-print("-------------- REPLY ONLY --------------")
-print(tokenizer.decode(generated_tokens[input_length:], skip_special_tokens=True))
+# def get_response_with_attentions(model, tokenizer, messages):
+#     inputs = tokenizer.apply_chat_template(
+#         messages,
+#         add_generation_prompt=True,
+#         tokenize=True,
+#         return_tensors="pt",
+#     ).to(model.device)
 
-# KV CACHE
-print("-------------- KV CACHE --------------")
-KV_cache = outputs.past_key_values.layers
-print(f"{len(KV_cache)} transformer layers in the model") # 32 tranformer layers i modellen
+#     input_ids = inputs.input_ids
+#     attention_masks = inputs.get('attention_mask')
+#     generated_tokens = input_ids.clone()
+#     all_attentions = []
 
-# Extract KV cache from specific transformer layer:
-# Fra https://huggingface.co/docs/transformers/v5.3.0/en/internal/generation_utils#transformers.DynamicCache
-# transformers.DynamicCache stores the key and value states as a list of CacheLayer, one for each layer. 
-layer_idx = 0
-layer = KV_cache[layer_idx]
-key = layer.keys
-value = layer.values
+#     for _ in range(256):  # max_new_tokens
+#         with torch.no_grad():
+#             outputs = model(
+#                 input_ids=input_ids,
+#                 attention_mask=attention_masks,
+#                 output_attentions=True,
+#                 use_cache=False,
+#                 return_dict=True,
+#             )
+        
+#         all_attentions.append(outputs.attentions)
+#         next_token = outputs.logits[0, -1, :].argmax(-1, keepdim=True)
+        
+#         if next_token.item() == tokenizer.eos_token_id:
+#             break
+        
+#         generated_tokens = torch.cat([generated_tokens, next_token], dim=-1)
+#         input_ids = next_token.unsqueeze(0) if input_ids.shape[0] == 1 else next_token
 
-print(f"KV cache from transformer layer {layer_idx}:")
-print(f"K dimension: {key.shape}")
-print(f"V dimension: {value.shape}")
-print()
+#     return inputs, outputs, generated_tokens, all_attentions
 
-# How to get KV cache from specific head in a specific layer???
-# Fra https://huggingface.co/docs/transformers/v5.3.0/en/internal/generation_utils#transformers.DynamicCache
-# The expected shape for each tensor in the CacheLayers is [batch_size, num_heads, seq_len, head_dim]
-# I guess udtrække fra en specifik head_idx.
-head_idx = 0
-key_head = key[0][head_idx] # [0] fordi, der er 1 batch
-value_head =  value[0][head_idx] # [0] fordi, der er 1 batch
 
-print(f"KV cache from transformer layer {layer_idx} and head {head_idx}:")
-print(f"Key dimension: {key_head.shape}")
-print(f"Value dimension: {value_head.shape}")
-print()
+def extract_KV(outputs, layer_idx, head_idx):
+    KV_cache = outputs.past_key_values.layers
+    layer = KV_cache[layer_idx]
+    key = layer.keys # [batch_size, num_heads, seq_len, head_dim]
+    value = layer.values # [batch_size, num_heads, seq_len, head_dim]
 
-# Indsætte KV cachen igen:
-# Der er et argument, der hedder past_key_values!!
-# past_key_values = outputs.past_key_values
-# # outputs = model(**inputs, past_key_values=past_key_values, use_cache=True)
-# # print(outputs)
-# # print(outputs.logits)
+    key_head = key[0][head_idx] # [0] fordi, der er 1 batch
+    value_head =  value[0][head_idx]
+    return KV_cache, key, value, key_head, value_head
 
-# Ved ikke helt hvad den genererer og hvordan man genererer nye tokens igen ved at bruge gammel KV cache
 
+def extract_query(model, inputs, layer_idx, head_idx):
+    """Extract query tensor and one query head for a given transformer layer.
+
+    Args:
+        model: Loaded causal language model.
+        inputs: Tokenized model inputs.
+        layer_idx: Transformer layer index.
+        head_idx: Query head index.
+
+    Returns:
+        Tuple with full query tensor [batch, num_heads, seq_len, head_dim] and
+        one query head [seq_len, head_dim] for batch index 0.
+    """
+    input_ids = inputs.input_ids if hasattr(inputs, "input_ids") else inputs["input_ids"]
+    attention_mask = (
+        inputs.get("attention_mask") if hasattr(inputs, "get") else inputs.get("attention_mask")
+    )
+
+    with torch.no_grad():
+        forward_outputs = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            use_cache=False,
+            output_hidden_states=True,
+            return_dict=True,
+        )
+
+    layer_module = model.model.layers[layer_idx]
+    hidden_in = forward_outputs.hidden_states[layer_idx]
+    normed_hidden = layer_module.input_layernorm(hidden_in)
+    query = layer_module.self_attn.q_proj(normed_hidden)
+
+    batch_size, seq_len, _ = query.shape
+    num_heads = getattr(layer_module.self_attn, "num_heads", model.config.num_attention_heads)
+    head_dim = getattr(layer_module.self_attn, "head_dim", query.shape[-1] // num_heads)
+    query = query.view(batch_size, seq_len, num_heads, head_dim).transpose(1, 2).contiguous()
+    query_head = query[0, head_idx]
+    return query, query_head
+
+
+# def compute_attention_weights(model, query, key):
+#     """Compute attention weights from query and key tensors.
+
+#     Args:
+#         model: Loaded causal language model.
+#         query: Query tensor [batch, num_query_heads, query_len, head_dim].
+#         key: Key tensor [batch, num_kv_heads, key_len, head_dim].
+
+#     Returns:
+#         Attention weights tensor [batch, num_query_heads, query_len, key_len].
+#     """
+#     num_key_value_groups = model.config.num_attention_heads // model.config.num_key_value_heads
+#     key_expanded = key.repeat_interleave(num_key_value_groups, dim=1)
+
+#     q_float = query.to(torch.float32)
+#     k_float = key_expanded.to(torch.float32)
+#     scale = 1.0 / math.sqrt(query.shape[-1])
+
+#     scores = torch.matmul(q_float, k_float.transpose(-2, -1)) * scale
+#     return torch.softmax(scores, dim=-1)
