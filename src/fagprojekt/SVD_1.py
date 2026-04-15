@@ -78,7 +78,7 @@ k = 50
 K = U_K[:,:k] @ torch.diag(s_K)[:k,:k] @ Vh_K[:,:k].T
 print(K.shape)
 M = torch.tril(torch.ones((K.shape[0], K.shape[0]), device=K.device, dtype=K.dtype))
-attn_weights_K = torch.softmax((M @ query_head.to(torch.float32)) @ K.T, dim=-1) @ value_head.to(torch.float32)
+attn_weights_K = torch.softmax((M + query_head.to(torch.float32)) @ K.T, dim=-1) @ value_head.to(torch.float32)
 
 
 # Method 2:
