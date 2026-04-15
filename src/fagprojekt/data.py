@@ -10,6 +10,11 @@ ROOT_DIR = Path("document-haystack")
 
 # MAKE A .env file in the root of the REPO with the HUGGINGFACE_HUB_TOKEN
 def download_data():
+    """Download the document-haystack dataset if it is not already present.
+
+    The dataset is stored under ``document-haystack`` and authenticated using
+    the ``HUGGINGFACE_HUB_TOKEN`` environment variable.
+    """
     if ROOT_DIR.exists() and any(ROOT_DIR.iterdir()):
         print(f"Skipping download, folder already exists: {ROOT_DIR}")
         return
@@ -22,6 +27,11 @@ def download_data():
     )
 
 def clean_data():
+    """Remove unwanted folders and files from the downloaded dataset.
+
+    Keeps only inner-most folders named ``Text_TextNeedles`` and removes files
+    whose names contain ``ImageNeedles``.
+    """
     keep_name = "Text_TextNeedles"
 
     if not ROOT_DIR.exists():

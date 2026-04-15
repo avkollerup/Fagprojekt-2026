@@ -4,11 +4,15 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, DynamicCache
 
 def load_model():
+    """Load the LLM and tokenizer.
+
+    Returns:
+        tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
+    """
     model_id = "meta-llama/Llama-3.1-8B-Instruct"
 
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        # attn_implementation="eager",
         dtype=torch.float16,
         device_map="auto",
     )
@@ -23,6 +27,16 @@ def load_model():
     return model, tokenizer
 
 def get_response(model, tokenizer, messages):
+    """Generate a model response for a chat-style message list.
+
+    Args:
+        model: Loaded causal language model.
+        tokenizer: Tokenizer associated with the model.
+        messages: Chat messages in role/content format.
+
+    Returns:
+        tuple: Tokenized inputs, generation outputs object, and generated token ids.
+    """
     inputs = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
@@ -80,6 +94,17 @@ def get_response(model, tokenizer, messages):
 
 
 def extract_KV(outputs, layer_idx, head_idx):
+    """Extract key/value cache tensors for a specific layer and attention head.
+
+    Args:
+        outputs: Generation outputs containing ``past_key_values``.
+        layer_idx: Transformer layer index to inspect.
+        head_idx: Attention head index to inspect.
+
+    Returns:
+        tuple: Full KV cache layers, full key tensor, full value tensor,
+        selected key head tensor, and selected value head tensor.
+    """
     KV_cache = outputs.past_key_values.layers
     layer = KV_cache[layer_idx]
     key = layer.keys # [batch_size, num_heads, seq_len, head_dim]

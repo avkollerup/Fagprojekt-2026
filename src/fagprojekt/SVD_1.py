@@ -57,6 +57,17 @@ print(f"Query dimension: {query_head.shape}\n")
 # print(f"Attention weights dimension: {true_attn_weights.shape}\n")
 
 def do_SVD(matrix, name, plot=False):
+    """Compute singular value decomposition and optionally plot explained variance.
+
+    Args:
+        matrix: Input tensor to decompose.
+        name: Label used in plot title and output filename.
+        plot: Whether to save a cumulative explained variance plot.
+
+    Returns:
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor]: ``U``, singular values,
+        and ``Vh`` from the SVD.
+    """
     # CUDA SVD does not support half precision; upcast for decomposition.
     svd_input = matrix.to(torch.float32)
     U, s, Vh = svd(svd_input)
