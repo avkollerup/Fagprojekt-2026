@@ -1,7 +1,7 @@
 from fagprojekt.model import (
     get_kvq,
-    get_messages
-    # compute_attention_weights,
+    get_messages,
+    get_true_attention_values
 )
 import torch
 import numpy as np
@@ -43,10 +43,9 @@ def method_1(key_head, query_head, value_head, k=50):
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
-    # Compute attention weights
-    attn_weights = torch.softmax((M + (query_head.to(torch.float32)) @ K.T), dim=-1) @ value_head.to(torch.float32)
-
-    return attn_weights
+    # Compute attention values
+    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ value_head
+    return attn_values
 
 def method_2(key_head, query_head, value_head, k=50):
     """Method 2: Decomposition of the key and value matrix seperately"""
@@ -60,10 +59,9 @@ def method_2(key_head, query_head, value_head, k=50):
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
-    # Compute attention weights
-    attn_weights = torch.softmax((M + (query_head.to(torch.float32)) @ K.T), dim=-1) @ V
-
-    return attn_weights
+    # Compute attention values
+    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
+    return attn_values
 
 def method_3(key_head, query_head, value_head, k=50):
     """Method 3: Jointly decompose key and value matrix"""
@@ -71,7 +69,7 @@ def method_3(key_head, query_head, value_head, k=50):
     joint = torch.cat((key_head, value_head), dim=1)
     U_J, s_J, Vt_J = do_SVD(joint)
 
-    # Truncate
+    # Truncate matrices
     U_k = U_J[:, :k]
     S_k = torch.diag(s_J[:k])
     Vt_k = Vt_J[:k, :]
@@ -91,19 +89,21 @@ def method_3(key_head, query_head, value_head, k=50):
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
-    attn_weights = torch.softmax((M + query_head.to(torch.float32) @ K.T), dim=-1) @ V
-    return attn_weights
+    # Compute attention values
+    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
+    return attn_values
+
 
 path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
 messages, prompt, needle = get_messages(path, num_tokens=100)
 
-key_head, value_head, query_head = get_kvq(messages, want_print=True)
+key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
 
-attn_weights_method_1 = method_1(key_head, query_head, value_head)
-attn_weights_method_2 = method_2(key_head, query_head, value_head)
-attn_weights_method_3 = method_3(key_head, query_head, value_head)
+attn_values_method_1 = method_1(key_head, query_head, value_head, k=50)
+attn_values_method_2 = method_2(key_head, query_head, value_head, k=50)
+attn_values_method_3 = method_3(key_head, query_head, value_head, k=50)
 
-"""Compute true attention weights:"""
-# true_attn_weights = compute_attention_weights(model, query, key)
-# true_attn_head = true_attn_weights[0, head_idx]
-# print(f"Attention weights dimension: {true_attn_weights.shape}\n")
+print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.size(), attn_values_method_2.size(), attn_values_method_3.size())
+
+true_attn_values = get_true_attention_values(query_head, key_head, value_head)
+print(f"True attention values dimension: {true_attn_values.shape}\n")

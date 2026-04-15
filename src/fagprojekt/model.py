@@ -1,4 +1,5 @@
 # Load model directly
+import math
 from functools import lru_cache
 from pathlib import Path
 
@@ -35,6 +36,46 @@ def load_model():
 
     return model, tokenizer
 
+def get_messages(path, num_tokens):
+    """Read a text file and get its last ``num_tokens`` tokens as text. Return the message template with the text and needle prompt inserted.
+
+    Args:
+        path: Path to a UTF-8 encoded text file.
+        num_tokens: Number of trailing tokens to keep.
+
+    Returns:
+        Message template with the text and needle prompt inserted, the text, the needle
+    """
+    text = Path(path).read_text(encoding="utf-8")
+    tokenizer = _get_tokenizer()
+    # Tokenize text
+    token_ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+
+    # Get last num_tokens tokens
+    last_token_ids = token_ids[-num_tokens:]
+    text = tokenizer.decode(last_token_ids, skip_special_tokens=True)
+
+    # Get the needle
+    needle_num = int(path[-5])
+  
+    needle_path=Path('/'.join((path.split('/')[:-2]))+'/needles.csv')
+    with open(needle_path) as file:
+        needle=file.read().splitlines()[needle_num-1]
+
+    # get the promt
+    prompt_path=Path('/'.join((path.split('/')[:-2]))+'/prompt_questions.txt')
+    with open(prompt_path) as file:
+        prompt=file.read().splitlines()[needle_num-1]
+
+    # Messages 
+    messages = [
+    {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
+    {"role": "user", "content": f"Read the following text and answer the question: '{prompt}' You must only use the provided information to answer. {text}"}, # Besked fra user (os)
+    ]
+
+    #Return last num_tokens of text
+    return messages, text, needle
+
 def get_response(model, tokenizer, messages):
     """Generate a model response for a chat-style message list.
 
@@ -65,42 +106,6 @@ def get_response(model, tokenizer, messages):
     )
     generated_tokens = outputs.sequences[0]
     return inputs, outputs, generated_tokens
-
-
-# def get_response_with_attentions(model, tokenizer, messages):
-#     inputs = tokenizer.apply_chat_template(
-#         messages,
-#         add_generation_prompt=True,
-#         tokenize=True,
-#         return_tensors="pt",
-#     ).to(model.device)
-
-#     input_ids = inputs.input_ids
-#     attention_masks = inputs.get('attention_mask')
-#     generated_tokens = input_ids.clone()
-#     all_attentions = []
-
-#     for _ in range(256):  # max_new_tokens
-#         with torch.no_grad():
-#             outputs = model(
-#                 input_ids=input_ids,
-#                 attention_mask=attention_masks,
-#                 output_attentions=True,
-#                 use_cache=False,
-#                 return_dict=True,
-#             )
-        
-#         all_attentions.append(outputs.attentions)
-#         next_token = outputs.logits[0, -1, :].argmax(-1, keepdim=True)
-        
-#         if next_token.item() == tokenizer.eos_token_id:
-#             break
-        
-#         generated_tokens = torch.cat([generated_tokens, next_token], dim=-1)
-#         input_ids = next_token.unsqueeze(0) if input_ids.shape[0] == 1 else next_token
-
-#     return inputs, outputs, generated_tokens, all_attentions
-
 
 def extract_KV(outputs, layer_idx, head_idx):
     """Extract key/value cache tensors for a specific layer and attention head.
@@ -163,30 +168,7 @@ def extract_query(model, inputs, layer_idx, head_idx):
     query_head = query[0, head_idx]
     return query, query_head
 
-
-# def compute_attention_weights(model, query, key):
-#     """Compute attention weights from query and key tensors.
-
-#     Args:
-#         model: Loaded causal language model.
-#         query: Query tensor [batch, num_query_heads, query_len, head_dim].
-#         key: Key tensor [batch, num_kv_heads, key_len, head_dim].
-
-#     Returns:
-#         Attention weights tensor [batch, num_query_heads, query_len, key_len].
-#     """
-#     num_key_value_groups = model.config.num_attention_heads // model.config.num_key_value_heads
-#     key_expanded = key.repeat_interleave(num_key_value_groups, dim=1)
-
-#     q_float = query.to(torch.float32)
-#     k_float = key_expanded.to(torch.float32)
-#     scale = 1.0 / math.sqrt(query.shape[-1])
-
-#     scores = torch.matmul(q_float, k_float.transpose(-2, -1)) * scale
-#     return torch.softmax(scores, dim=-1)
-
-
-def get_kvq(messages, want_print=False):
+def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False):
     # Load model
     model, tokenizer = load_model()
 
@@ -194,9 +176,7 @@ def get_kvq(messages, want_print=False):
     inputs, outputs, generated_tokens = get_response(model, tokenizer, messages)
 
     # KV cache
-    layer_idx = 0
-    head_idx = 0
-    KV_cache, key, value, key_head, value_head = extract_KV(outputs, layer_idx=0, head_idx=0)
+    KV_cache, key, value, key_head, value_head = extract_KV(outputs, layer_idx, head_idx)
 
     # Get query matrix
     query_inputs = {
@@ -210,6 +190,10 @@ def get_kvq(messages, want_print=False):
     if query.shape[2] != kv_seq_len:
         query = query[:, :, :kv_seq_len, :]
         query_head = query_head[:kv_seq_len, :]
+
+    query_head = query_head.to(torch.float32)
+    key_head = key_head.to(torch.float32)
+    value_head = value_head.to(torch.float32)
 
     if want_print:
         print("-------------- SYSTEM PROMPT AND REPLY --------------")
@@ -231,45 +215,7 @@ def get_kvq(messages, want_print=False):
         print(f"Query dimension: {query_head.shape}\n")
     return key_head, value_head, query_head
 
-
-def get_messages(path, num_tokens):
-    """Read a text file and get its last ``num_tokens`` tokens as text. Return the message template with the text and needle prompt inserted.
-
-    Args:
-        path: Path to a UTF-8 encoded text file.
-        num_tokens: Number of trailing tokens to keep.
-
-    Returns:
-        Message template with the text and needle prompt inserted, the text, the needle
-    """
-    text = Path(path).read_text(encoding="utf-8")
-    tokenizer = _get_tokenizer()
-    # Tokenize text
-    token_ids = tokenizer(text, add_special_tokens=False)["input_ids"]
-
-    # Get last num_tokens tokens
-    last_token_ids = token_ids[-num_tokens:]
-    text = tokenizer.decode(last_token_ids, skip_special_tokens=True)
-
-    # Get the needle
-    needle_num = int(path[-5])
-  
-    needle_path=Path('/'.join((path.split('/')[:-2]))+'/needles.csv')
-    with open(needle_path) as file:
-        needle=file.read().splitlines()[needle_num-1]
-
-    # get the promt
-    prompt_path=Path('/'.join((path.split('/')[:-2]))+'/prompt_questions.txt')
-    with open(prompt_path) as file:
-        prompt=file.read().splitlines()[needle_num-1]
-
-    # Messages 
-    messages = [
-    {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
-    {"role": "user", "content": f"Read the following text and answer the question: '{prompt}' You must only use the provided information to answer. {text}"}, # Besked fra user (os)
-    ]
-
-    #Return last num_tokens of text
-    return messages, text, needle
-
-    
+def get_true_attention_values(query_head, key_head, value_head):
+    M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
+    attn_values = torch.softmax((M + (query_head @ key_head.T)), dim=-1) @ value_head
+    return attn_values
