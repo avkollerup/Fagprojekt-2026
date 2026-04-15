@@ -1,7 +1,18 @@
 # Load model directly
-import math
+from functools import lru_cache
+from pathlib import Path
+
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, DynamicCache
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+
+MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
+
+
+@lru_cache(maxsize=1)
+def _get_tokenizer() -> AutoTokenizer:
+    """Return a cached tokenizer instance for consistent token counting."""
+    return AutoTokenizer.from_pretrained(MODEL_ID)
 
 def load_model():
     """Load the LLM and tokenizer.
@@ -9,14 +20,12 @@ def load_model():
     Returns:
         tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
     """
-    model_id = "meta-llama/Llama-3.1-8B-Instruct"
-
     model = AutoModelForCausalLM.from_pretrained(
-        model_id,
+        MODEL_ID,
         dtype=torch.float16,
         device_map="auto",
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer = _get_tokenizer()
 
     print("-------------- MODEL DEVICE --------------")
     # Bare et tjek at den rent faktisk kører på GPU haha
@@ -175,3 +184,92 @@ def extract_query(model, inputs, layer_idx, head_idx):
 
 #     scores = torch.matmul(q_float, k_float.transpose(-2, -1)) * scale
 #     return torch.softmax(scores, dim=-1)
+
+
+def get_kvq(messages, want_print=False):
+    # Load model
+    model, tokenizer = load_model()
+
+    # Generate response
+    inputs, outputs, generated_tokens = get_response(model, tokenizer, messages)
+
+    # KV cache
+    layer_idx = 0
+    head_idx = 0
+    KV_cache, key, value, key_head, value_head = extract_KV(outputs, layer_idx=0, head_idx=0)
+
+    # Get query matrix
+    query_inputs = {
+        "input_ids": generated_tokens.unsqueeze(0),
+        "attention_mask": torch.ones_like(generated_tokens).unsqueeze(0),
+    }
+    query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
+
+    # Resize Q to T-1:
+    kv_seq_len = key.shape[2]
+    if query.shape[2] != kv_seq_len:
+        query = query[:, :, :kv_seq_len, :]
+        query_head = query_head[:kv_seq_len, :]
+
+    if want_print:
+        print("-------------- SYSTEM PROMPT AND REPLY --------------")
+        print(tokenizer.decode(generated_tokens, skip_special_tokens=True))
+
+        print("-------------- REPLY ONLY --------------")
+        input_length = inputs.input_ids.shape[1]
+        print(tokenizer.decode(generated_tokens[input_length:], skip_special_tokens=True), "\n")
+
+        print(f"{len(KV_cache)} transformer layers in the model")
+
+        print(f"KV cache from transformer layer {layer_idx}:")
+        print(f"K dimension: {key.shape}")
+        print(f"V dimension: {value.shape}\n")
+
+        print(f"KV cache from transformer layer {layer_idx} and head {head_idx}:")
+        print(f"Key dimension: {key_head.shape}")
+        print(f"Value dimension: {value_head.shape}")
+        print(f"Query dimension: {query_head.shape}\n")
+    return key_head, value_head, query_head
+
+
+def get_messages(path, num_tokens):
+    """Read a text file and get its last ``num_tokens`` tokens as text. Return the message template with the text and needle prompt inserted.
+
+    Args:
+        path: Path to a UTF-8 encoded text file.
+        num_tokens: Number of trailing tokens to keep.
+
+    Returns:
+        Message template with the text and needle prompt inserted, the text, the needle
+    """
+    text = Path(path).read_text(encoding="utf-8")
+    tokenizer = _get_tokenizer()
+    # Tokenize text
+    token_ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+
+    # Get last num_tokens tokens
+    last_token_ids = token_ids[-num_tokens:]
+    text = tokenizer.decode(last_token_ids, skip_special_tokens=True)
+
+    # Get the needle
+    needle_num = int(path[-5])
+  
+    needle_path=Path('/'.join((path.split('/')[:-2]))+'/needles.csv')
+    with open(needle_path) as file:
+        needle=file.read().splitlines()[needle_num-1]
+
+    # get the promt
+    prompt_path=Path('/'.join((path.split('/')[:-2]))+'/prompt_questions.txt')
+    with open(prompt_path) as file:
+        prompt=file.read().splitlines()[needle_num-1]
+
+    # Messages 
+    messages = [
+    {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
+    {"role": "user", "content": f"Read the following text and answer the question: '{prompt}' You must only use the provided information to answer. {text}"}, # Besked fra user (os)
+    ]
+
+    #Return last num_tokens of text
+    return messages, text, needle
+
+    
