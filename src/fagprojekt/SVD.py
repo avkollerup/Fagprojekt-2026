@@ -3,6 +3,11 @@ from fagprojekt.model import (
     get_messages,
     get_true_attention_values
 )
+
+from fagprojekt.evaluate import (
+    compare_attention
+)
+
 import torch
 import numpy as np
 from torch.linalg import svd
@@ -107,3 +112,7 @@ print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.
 
 true_attn_values = get_true_attention_values(query_head, key_head, value_head)
 print(f"True attention values dimension: {true_attn_values.shape}\n")
+
+compare_attention(true_attn_values, attn_values_method_1, "Method 1")
+compare_attention(true_attn_values, attn_values_method_2, "Method 2")
+compare_attention(true_attn_values, attn_values_method_3, "Method 3")
