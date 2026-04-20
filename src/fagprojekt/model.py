@@ -168,9 +168,13 @@ def extract_query(model, inputs, layer_idx, head_idx):
     query_head = query[0, head_idx]
     return query, query_head
 
-def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False):
-    # Load model
-    model, tokenizer = load_model()
+def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False,model=None,tokenizer=None):
+    # Load model if not given
+    if model == None:
+        model, tokenizer = load_model()
+    elif tokenizer == None:
+        tokenizer = _get_tokenizer
+
 
     # Generate response
     inputs, outputs, generated_tokens = get_response(model, tokenizer, messages)
