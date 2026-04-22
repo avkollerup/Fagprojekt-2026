@@ -21,18 +21,25 @@ def load_model():
     Returns:
         tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
     """
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        dtype=torch.float16,
-        device_map="auto",
-    )
+    if torch.cuda.is_available():
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            dtype=torch.float16,
+            device_map="auto",
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            dtype=torch.float32,
+            device_map="cpu",
+        )
     tokenizer = _get_tokenizer()
 
     print("-------------- MODEL DEVICE --------------")
     # Bare et tjek at den rent faktisk kører på GPU haha
     if torch.cuda.is_available():
         print(torch.cuda.get_device_name(0))
-    print(model.device)
+    print(model.get_input_embeddings().weight.device)
 
     return model, tokenizer
 
@@ -92,7 +99,7 @@ def get_response(model, tokenizer, messages):
         add_generation_prompt=True,
         tokenize=True,
         return_tensors="pt",
-    ).to(model.device)
+    ).to(model.get_input_embeddings().weight.device)
 
     # Genererer output tokens (LLM'ens svar)
     outputs = model.generate(
