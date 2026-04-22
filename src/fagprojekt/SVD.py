@@ -26,7 +26,7 @@ def do_SVD(matrix, name= None, plot=False):
     """
     # CUDA SVD does not support half precision; upcast for decomposition.
     svd_input = matrix.to(torch.float32)
-    U, s, Vt = svd(svd_input)
+    U, s, Vt = svd(svd_input, full_matrices=False)
 
     if plot:
         plt.figure()
@@ -42,8 +42,8 @@ def method_1(key_head, query_head, value_head, k=50):
     """Method 1: Decomposition of the key matrix only"""
     U_K, s_K, Vt_K = do_SVD(key_head)
 
-    # Truncate and calculate K again
-    K = U_K[:, :k] @ torch.diag(s_K[:k]) @ Vt_K[:k, :]
+    k_eff = min(k, s_K.shape[0])
+    K = U_K[:, :k_eff] @ torch.diag(s_K[:k_eff]) @ Vt_K[:k_eff, :]
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
@@ -57,9 +57,10 @@ def method_2(key_head, query_head, value_head, k=50):
     U_K, s_K, Vt_K = do_SVD(key_head)
     U_V, s_V, Vt_V = do_SVD(value_head)
 
-    # Truncate and calculate K & V again
-    K = U_K[:, :k] @ torch.diag(s_K[:k]) @ Vt_K[:k, :]
-    V = U_V[:, :k] @ torch.diag(s_V[:k]) @ Vt_V[:k, :]
+    k_k = min(k, s_K.shape[0])
+    k_v = min(k, s_V.shape[0])
+    K = U_K[:, :k_k] @ torch.diag(s_K[:k_k]) @ Vt_K[:k_k, :]
+    V = U_V[:, :k_v] @ torch.diag(s_V[:k_v]) @ Vt_V[:k_v, :]
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
@@ -74,10 +75,10 @@ def method_3(key_head, query_head, value_head, k=50):
     joint = torch.cat((key_head, value_head), dim=1)
     U_J, s_J, Vt_J = do_SVD(joint)
 
-    # Truncate matrices
-    U_k = U_J[:, :k]
-    S_k = torch.diag(s_J[:k])
-    Vt_k = Vt_J[:k, :]
+    k_eff = min(k, s_J.shape[0])
+    U_k = U_J[:, :k_eff]
+    S_k = torch.diag(s_J[:k_eff])
+    Vt_k = Vt_J[:k_eff, :]
 
     # Determine A matrix
     A = U_k @ S_k  

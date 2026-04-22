@@ -74,14 +74,15 @@ def pca_analysis():
                 method_3_dict[head].append(torch.mean((true_attn_values - attn_values_method_3)**2).item())
     
     # plot the analysis
-    num_heads=len(method_1_dict)
-    fig, axes = plt.subplots(nrows = num_heads//2, ncols = num_heads//2 + 1)
+    num_heads = len(method_1_dict)
+    fig, axes = plt.subplots(nrows=1, ncols=num_heads, squeeze=False)
+    axes = axes.flatten()
     for i, head in enumerate(method_1_dict.keys()):
         ax = axes[i]
 
-        ax.plot( num_components , method_1_dict[head], label = "K")
-        ax.plot(num_components, method_2_dict[head], label = "V")
-        ax.plot(num_components, method_3_dict[head], label= "K & V")
+        ax.plot(components_list, method_1_dict[head], label="K")
+        ax.plot(components_list, method_2_dict[head], label="V")
+        ax.plot(components_list, method_3_dict[head], label="K & V")
 
         ax.set_title(f'Head {head}')
         ax.set_ylabel('MSE')
