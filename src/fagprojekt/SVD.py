@@ -9,9 +9,7 @@ from fagprojekt.evaluate import (
 )
 
 import torch
-import numpy as np
 from torch.linalg import svd
-import matplotlib.pyplot as plt
 
 def do_SVD(matrix, name= None, plot=False):
     """Compute singular value decomposition and optionally plot explained variance.
@@ -19,7 +17,6 @@ def do_SVD(matrix, name= None, plot=False):
     Args:
         matrix: Input tensor to decompose.
         name: Label used in plot title and output filename.
-        plot: Whether to save a cumulative explained variance plot.
 
     Returns:
         U, singular values, and Vh from the SVD.
@@ -27,14 +24,6 @@ def do_SVD(matrix, name= None, plot=False):
     # CUDA SVD does not support half precision; upcast for decomposition.
     svd_input = matrix.to(torch.float32)
     U, s, Vt = svd(svd_input, full_matrices=False)
-
-    if plot:
-        plt.figure()
-        plt.plot(np.cumsum((s**2/sum(s**2)).detach().cpu().numpy()))
-        plt.title(f'Explained variance by principal components of {name}')
-        plt.xlabel('Number of components')
-        plt.ylabel('Explained variance')
-        plt.savefig(f'reports/figures/explained_var_{name}.pdf')
     return U, s, Vt
 
 
@@ -100,20 +89,21 @@ def method_3(key_head, query_head, value_head, k=50):
     return attn_values
 
 
-path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-messages, prompt, needle = get_messages(path, num_tokens=100)
+if __name__ == "__main__":
+    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
+    messages, prompt, needle = get_messages(path, num_tokens=100)
 
-key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
+    key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
 
-attn_values_method_1 = method_1(key_head, query_head, value_head, k=50)
-attn_values_method_2 = method_2(key_head, query_head, value_head, k=50)
-attn_values_method_3 = method_3(key_head, query_head, value_head, k=50)
+    attn_values_method_1 = method_1(key_head, query_head, value_head, k=50)
+    attn_values_method_2 = method_2(key_head, query_head, value_head, k=50)
+    attn_values_method_3 = method_3(key_head, query_head, value_head, k=50)
 
-print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.size(), attn_values_method_2.size(), attn_values_method_3.size())
+    print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.size(),attn_values_method_2.size(),attn_values_method_3.size())
 
-true_attn_values = get_true_attention_values(query_head, key_head, value_head)
-print(f"True attention values dimension: {true_attn_values.shape}\n")
+    true_attn_values = get_true_attention_values(query_head, key_head, value_head)
+    print(f"True attention values dimension: {true_attn_values.shape}\n")
 
-compare_attention(true_attn_values, attn_values_method_1, "Method 1")
-compare_attention(true_attn_values, attn_values_method_2, "Method 2")
-compare_attention(true_attn_values, attn_values_method_3, "Method 3")
+    compare_attention(true_attn_values, attn_values_method_1, "Method 1")
+    compare_attention(true_attn_values, attn_values_method_2, "Method 2")
+    compare_attention(true_attn_values, attn_values_method_3, "Method 3")
