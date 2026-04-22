@@ -24,13 +24,13 @@ def load_model():
     if torch.cuda.is_available():
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            dtype=torch.float16,
-            device_map="auto",
+            dtype=torch.bfloat16,
+            device_map="cuda",
         )
     else:
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            dtype=torch.float32,
+            dtype=torch.bfloat32,
             device_map="cpu",
         )
     tokenizer = _get_tokenizer()
@@ -39,7 +39,7 @@ def load_model():
     # Bare et tjek at den rent faktisk kører på GPU haha
     if torch.cuda.is_available():
         print(torch.cuda.get_device_name(0))
-    print(model.get_input_embeddings().weight.device)
+    print(model.device)
 
     return model, tokenizer
 
@@ -77,7 +77,7 @@ def get_messages(path, num_tokens):
     # Messages 
     messages = [
     {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
-    {"role": "user", "content": f"Read the following text and answer the question: '{prompt}' You must only use the provided information to answer. {text}"}, # Besked fra user (os)
+    {"role": "user", "content": f"Read the following text and answer the question: '{prompt}' You must only use the provided information to answer.\nText:\n{text}"}, # Besked fra user (os)
     ]
 
     #Return last num_tokens of text
@@ -99,7 +99,7 @@ def get_response(model, tokenizer, messages):
         add_generation_prompt=True,
         tokenize=True,
         return_tensors="pt",
-    ).to(model.get_input_embeddings().weight.device)
+    ).to(model.device)
 
     # Genererer output tokens (LLM'ens svar)
     outputs = model.generate(
@@ -202,16 +202,19 @@ def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False,model=None,tokeni
         query = query[:, :, :kv_seq_len, :]
         query_head = query_head[:kv_seq_len, :]
 
+    # Error if not float32
     query_head = query_head.to(torch.float32)
     key_head = key_head.to(torch.float32)
     value_head = value_head.to(torch.float32)
 
     if want_print:
         print("-------------- SYSTEM PROMPT AND REPLY --------------")
+        input_length = inputs.input_ids.shape[1]
+        print("Input length:", input_length)
+
         print(tokenizer.decode(generated_tokens, skip_special_tokens=True))
 
         print("-------------- REPLY ONLY --------------")
-        input_length = inputs.input_ids.shape[1]
         print(tokenizer.decode(generated_tokens[input_length:], skip_special_tokens=True), "\n")
 
         print(f"{len(KV_cache)} transformer layers in the model")

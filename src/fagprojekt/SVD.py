@@ -1,18 +1,10 @@
-from fagprojekt.model import (
-    get_kvq,
-    get_messages,
-    get_true_attention_values
-)
-
-from fagprojekt.evaluate import (
-    compare_attention
-)
+from fagprojekt.model import get_kvq, get_messages, get_true_attention_values
+from fagprojekt.evaluate import compare_attention
 
 import torch
-from torch.linalg import svd
 
-def do_SVD(matrix, name= None, plot=False):
-    """Compute singular value decomposition and optionally plot explained variance.
+def do_SVD(matrix):
+    """Compute singular value decomposition
 
     Args:
         matrix: Input tensor to decompose.
@@ -21,9 +13,7 @@ def do_SVD(matrix, name= None, plot=False):
     Returns:
         U, singular values, and Vh from the SVD.
     """
-    # CUDA SVD does not support half precision; upcast for decomposition.
-    svd_input = matrix.to(torch.float32)
-    U, s, Vt = svd(svd_input, full_matrices=False)
+    U, s, Vt = torch.linalg.svd(matrix, full_matrices=False)
     return U, s, Vt
 
 
