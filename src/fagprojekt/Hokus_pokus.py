@@ -71,7 +71,13 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
     true_attn = method_1(key_head, query_head, value_head, k=k).detach()
 
+    # Perform SVD decomposition of K to get A and B matrices
     a_mat, b_mat = decompose_K(key_head, k=k)
+    
+    # scale a_mat and b_mat to ensure that the scale does not explode
+    alpha = torch.linalg.norm(a_mat,axis=1)
+    a_mat = a_mat @ torch.inv(torch.diag(alpha))
+    b_mat = torch.diag(alpha) @ b_mat
 
     seq_len = query_head.shape[0]
     g_theta = build_mlp(seq_len).to(query_head.device)
