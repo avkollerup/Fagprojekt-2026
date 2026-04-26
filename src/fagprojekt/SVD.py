@@ -31,6 +31,19 @@ def method_1(key_head, query_head, value_head, k=50):
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ value_head
     return attn_values
 
+def decompose_K(key_head, k=50):
+    U_K, s_K, Vt_K = do_SVD(key_head)
+
+    k_eff = min(k, s_K.shape[0])
+    U_k = U_K[:, :k_eff]
+    S_k = torch.diag(s_K[:k_eff])
+
+    A = U_k @ S_k  
+    B = Vt_K[:k_eff, :].T
+    
+    return A, B
+
+
 def method_2(key_head, query_head, value_head, k=50):
     """Method 2: Decomposition of the key and value matrix seperately"""
     U_K, s_K, Vt_K = do_SVD(key_head)
