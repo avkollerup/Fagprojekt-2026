@@ -50,9 +50,7 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     return transformed_input_data @ a_mat.T @ value_head
 
 
-def loss_fn(true_attn, approx_attn):
-    """Compute mean squared error between true and approximated attention values."""
-    return torch.nn.functional.mse_loss(approx_attn, true_attn)
+
 
 
 def train(path, method, epochs = 500, lr = 1e-3, k = 50):
@@ -78,13 +76,14 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     seq_len = query_head.shape[0]
     g_theta = build_mlp(seq_len).to(query_head.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
+    loss_fn = torch.nn.functional.mse_loss()
 
     train_loss = []
 
     for step in range(epochs):
         optimizer.zero_grad()
 
-        approx = hokus_pokus(
+        y_pred = hokus_pokus(
             query_head=query_head,
             value_head=value_head,
             a_mat=a_mat,
@@ -93,7 +92,8 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
             g_theta=g_theta,
         )
 
-        loss = loss_fn(true_attn, approx)
+        loss = loss_fn(true_attn, y_pred)
+        
         loss.backward()
         optimizer.step()
         train_loss.append(loss.item())

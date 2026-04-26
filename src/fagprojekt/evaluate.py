@@ -73,7 +73,7 @@ def pca_analysis():
     pages = range(1, 5)
     for page in pages:
         path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
-        messages, _, _ = get_messages(path, num_tokens=200)
+        messages, _, _ = get_messages(path, num_tokens=100)
 
         # perform for each head
         heads = range (0,5)
