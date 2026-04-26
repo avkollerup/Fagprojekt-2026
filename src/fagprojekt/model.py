@@ -21,18 +21,11 @@ def load_model():
     Returns:
         tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
     """
-    if torch.cuda.is_available():
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            dtype=torch.bfloat16,
-            device_map="cuda",
-        )
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            dtype=torch.bfloat32,
-            device_map="cpu",
-        )
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_ID,
+        dtype=torch.bfloat16,
+        device_map=device)
     tokenizer = _get_tokenizer()
 
     print("-------------- MODEL DEVICE --------------")
@@ -94,12 +87,14 @@ def get_response(model, tokenizer, messages):
     Returns:
         tuple: Tokenized inputs, generation outputs object, and generated token ids.
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     inputs = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
         tokenize=True,
         return_tensors="pt",
-    ).to(model.device)
+    ).to(device)
 
     # Genererer output tokens (LLM'ens svar)
     outputs = model.generate(
@@ -149,10 +144,8 @@ def extract_query(model, inputs, layer_idx, head_idx):
         Tuple with full query tensor [batch, num_heads, seq_len, head_dim] and
         one query head [seq_len, head_dim] for batch index 0.
     """
-    input_ids = inputs.input_ids if hasattr(inputs, "input_ids") else inputs["input_ids"]
-    attention_mask = (
-        inputs.get("attention_mask") if hasattr(inputs, "get") else inputs.get("attention_mask")
-    )
+    input_ids = inputs["input_ids"]
+    attention_mask = inputs["attention_mask"]
 
     with torch.no_grad():
         forward_outputs = model(
@@ -164,6 +157,7 @@ def extract_query(model, inputs, layer_idx, head_idx):
         )
 
     layer_module = model.model.layers[layer_idx]
+    # hidden_states[i] is the input representation to transformer layer i.
     hidden_in = forward_outputs.hidden_states[layer_idx]
     normed_hidden = layer_module.input_layernorm(hidden_in)
     query = layer_module.self_attn.q_proj(normed_hidden)
@@ -171,6 +165,7 @@ def extract_query(model, inputs, layer_idx, head_idx):
     batch_size, seq_len, _ = query.shape
     num_heads = getattr(layer_module.self_attn, "num_heads", model.config.num_attention_heads)
     head_dim = getattr(layer_module.self_attn, "head_dim", query.shape[-1] // num_heads)
+    # Reshape [B, T, H*D] -> [B, H, T, D] to index a specific attention head.
     query = query.view(batch_size, seq_len, num_heads, head_dim).transpose(1, 2).contiguous()
     query_head = query[0, head_idx]
     return query, query_head
@@ -181,7 +176,6 @@ def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False,model=None,tokeni
         model, tokenizer = load_model()
     elif tokenizer == None:
         tokenizer = _get_tokenizer
-
 
     # Generate response
     inputs, outputs, generated_tokens = get_response(model, tokenizer, messages)
