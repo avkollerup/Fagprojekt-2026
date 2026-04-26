@@ -1,12 +1,12 @@
 import torch
 import numpy as np
-from pathlib import Path
 
-# We have used three metrics: 
-# - MSE for raw error (might look small because of small values)
-# - Frobenius norm for scale-independent accuracy
-# - Cosine similarity to capture structural (attention pattern) similarity
 def compare_attention(true_attn, approx_attn, name):
+    """ We have used three metrics: 
+        - MSE for raw error (might look small because of small values)
+        - Frobenius norm for scale-independent accuracy
+        - Cosine similarity to capture structural (attention pattern) similarity"""
+    
     mse = torch.mean((true_attn - approx_attn) ** 2).item()
     rel_frob = (torch.norm(true_attn - approx_attn, p="fro") / torch.norm(true_attn, p="fro")).item()
     cos = torch.nn.functional.cosine_similarity(true_attn.flatten(), approx_attn.flatten(), dim=0).item()
@@ -46,14 +46,11 @@ def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
 # do big principal component analysis
 def pca_analysis():
     # imports 
-    from fagprojekt.SVD import method_1,method_2,method_3
-    from fagprojekt.model import (load_model, get_kvq, get_messages, get_true_attention_values)
+    from fagprojekt.SVD import method_1, method_2, method_3
+    from fagprojekt.model import load_model, get_kvq, get_messages, get_true_attention_values
 
     from collections import defaultdict
     import matplotlib.pyplot as plt
-
-    figures_dir = Path("reports/figures")
-    figures_dir.mkdir(parents=True, exist_ok=True)
 
     # load model only once
     model,tokenizer = load_model()
@@ -62,12 +59,12 @@ def pca_analysis():
     method_1_dict = defaultdict(lambda: defaultdict(list))
     method_2_dict = defaultdict(lambda: defaultdict(list))
     method_3_dict = defaultdict(lambda: defaultdict(list))
-    explained_var_k_dict = defaultdict(list)
-    explained_var_v_dict = defaultdict(list)
-    explained_var_joint_dict = defaultdict(list)
-    k90_k_dict = defaultdict(list)
-    k90_v_dict = defaultdict(list)
-    k90_joint_dict = defaultdict(list)
+    explained_var_method_1_dict = defaultdict(list)
+    explained_var_method_2_dict = defaultdict(list)
+    explained_var_method_3_dict = defaultdict(list)
+    k90_method_1_dict = defaultdict(list)
+    k90_method_2_dict = defaultdict(list)
+    k90_method_3_dict = defaultdict(list)
     
     # test different number of components
     components_list = list(map(int, np.linspace(10, 200, 10)))
@@ -75,33 +72,49 @@ def pca_analysis():
     # iterate over pages
     pages = range(1, 5)
     for page in pages:
-        # get respone, kv cache and attention values
         path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
-        messages, prompt, needle = get_messages(path, num_tokens=100)
+        messages, _, _ = get_messages(path, num_tokens=200)
 
         # perform for each head
-        heads = range (0,3)
+        heads = range (0,5)
         for head in heads:
+            # Get K, V, Q 
             key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=head, want_print=True, model=model, tokenizer=tokenizer)
+
+            # Explained variance for K, V, and KV-joint
+            ev_k = cumulative_explained_variance_for_components(key_head, components_list)
+            ev_v = cumulative_explained_variance_for_components(value_head, components_list)
             joint = torch.cat((key_head, value_head), dim=1)
-            true_attn_values = get_true_attention_values(query_head, key_head, value_head)
+            ev_joint = cumulative_explained_variance_for_components(joint, components_list)
 
-            explained_var_k_dict[head].append(cumulative_explained_variance_for_components(key_head, components_list))
-            explained_var_v_dict[head].append(cumulative_explained_variance_for_components(value_head, components_list))
-            explained_var_joint_dict[head].append(cumulative_explained_variance_for_components(joint, components_list))
+            # Method 1: K decomposition only.
+            explained_var_method_1_dict[head].append(ev_k)
+            # Method 2: K, V decomposed separately; track shared progress as the mean of K and V.
+            explained_var_method_2_dict[head].append(((np.array(ev_k) + np.array(ev_v)) / 2.0).tolist())
+            # Method 3: joint decomposition.
+            explained_var_method_3_dict[head].append(ev_joint)
 
-            k90_k_dict[head].append(first_k_for_threshold(key_head, threshold=0.9))
-            k90_v_dict[head].append(first_k_for_threshold(value_head, threshold=0.9))
-            k90_joint_dict[head].append(first_k_for_threshold(joint, threshold=0.9))
+            # How many components for 0.9 explained variance for each method
+            k90_k = first_k_for_threshold(key_head, threshold=0.9)
+            k90_v = first_k_for_threshold(value_head, threshold=0.9)
+            k90_joint = first_k_for_threshold(joint, threshold=0.9)
+
+            # Method 1
+            k90_method_1_dict[head].append(k90_k)
+            # Method 2 needs both K and V to be well represented.
+            k90_method_2_dict[head].append(max(k90_k, k90_v))
+            # Method 3
+            k90_method_3_dict[head].append(k90_joint)
 
             for num_components in components_list:
+                # Get attention values
                 attn_values_method_1 = method_1(key_head, query_head, value_head, k=num_components)
                 attn_values_method_2 = method_2(key_head, query_head, value_head, k=num_components)
                 attn_values_method_3 = method_3(key_head, query_head, value_head, k=num_components)
 
                 true_attn_values = get_true_attention_values(query_head, key_head, value_head)
 
-                # save to the lists
+                # save MSE for each method to the lists
                 method_1_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_1)**2).item())
                 method_2_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_2)**2).item())
                 method_3_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_3)**2).item())
@@ -115,16 +128,24 @@ def pca_analysis():
         axes = axes.reshape(1, -1)
 
     for row_idx, head in enumerate(heads):
+        # Get average of MSE for each head across pages
         m1_avg = np.mean(np.array(list(method_1_dict[head].values())), axis=0).tolist()
         m2_avg = np.mean(np.array(list(method_2_dict[head].values())), axis=0).tolist()
         m3_avg = np.mean(np.array(list(method_3_dict[head].values())), axis=0).tolist()
-        ev_k_avg = np.mean(np.array(explained_var_k_dict[head]), axis=0).tolist()
-        ev_v_avg = np.mean(np.array(explained_var_v_dict[head]), axis=0).tolist()
-        ev_joint_avg = np.mean(np.array(explained_var_joint_dict[head]), axis=0).tolist()
-        k90_k_avg = int(round(float(np.mean(k90_k_dict[head]))))
-        k90_v_avg = int(round(float(np.mean(k90_v_dict[head]))))
-        k90_joint_avg = int(round(float(np.mean(k90_joint_dict[head]))))
 
+        # Get average of explained variance for each head across pages
+        ev_method_1_avg = np.mean(np.array(explained_var_method_1_dict[head]), axis=0).tolist()
+        ev_method_2_avg = np.mean(np.array(explained_var_method_2_dict[head]), axis=0).tolist()
+        ev_method_3_avg = np.mean(np.array(explained_var_method_3_dict[head]), axis=0).tolist()
+
+        # Get average of num components for 0.9 explained variance for each head across pages
+        k90_method_1_avg = int(round(float(np.mean(k90_method_1_dict[head]))))
+        k90_method_2_avg = int(round(float(np.mean(k90_method_2_dict[head]))))
+        k90_method_3_avg = int(round(float(np.mean(k90_method_3_dict[head]))))
+
+
+        # Plotting
+        # Method 1: MSE over num components
         ax = axes[row_idx, 0]
         ax.plot(components_list, m1_avg, label=f"Head {head}", marker='o', linewidth=2, markersize=6)
         ax.set_title(f'Method 1 (K) - Head {head}', fontsize=10, fontweight='bold')
@@ -133,6 +154,7 @@ def pca_analysis():
         ax.grid(True, alpha=0.3)
         ax.legend()
 
+        # Method 2: MSE over num components
         ax = axes[row_idx, 1]
         ax.plot(components_list, m2_avg, label=f"Head {head}", marker='s', linewidth=2, markersize=6)
         ax.set_title(f'Method 2 (K & V sep) - Head {head}', fontsize=10, fontweight='bold')
@@ -141,6 +163,7 @@ def pca_analysis():
         ax.grid(True, alpha=0.3)
         ax.legend()
 
+        # Method 3: MSE over num components
         ax = axes[row_idx, 2]
         ax.plot(components_list, m3_avg, label=f"Head {head}", marker='^', linewidth=2, markersize=6)
         ax.set_title(f'Method 3 (K & V joint) - Head {head}', fontsize=10, fontweight='bold')
@@ -149,48 +172,51 @@ def pca_analysis():
         ax.grid(True, alpha=0.3)
         ax.legend()
 
+        # Method 1: Explained variance over num components
         ax = axes[row_idx, 3]
-        ax.plot(components_list, ev_k_avg, label="K", marker='o', linewidth=2, markersize=6, color="tab:orange")
+        ax.plot(components_list, ev_method_1_avg, label="Method 1", marker='o', linewidth=2, markersize=6, color="tab:orange")
         ax.axhline(0.9, linestyle=":", color="gray", linewidth=2.0, label="Threshold = 0.9")
-        if components_list[0] <= k90_k_avg <= components_list[-1]:
-            ax.axvline(k90_k_avg, linestyle=":", color="tab:orange", linewidth=1.5)
-            ax.text(k90_k_avg, 0.95, f"  k={k90_k_avg}", fontsize=8, color="tab:orange")
-        ax.set_title(f'Expl. Var K - Head {head}', fontsize=10, fontweight='bold')
+        if components_list[0] <= k90_method_1_avg <= components_list[-1]:
+            ax.axvline(k90_method_1_avg, linestyle=":", color="tab:orange", linewidth=1.5)
+            ax.text(k90_method_1_avg, 0.95, f"  k={k90_method_1_avg}", fontsize=8, color="black")
+        ax.set_title(f'Expl. Var Method 1 - Head {head}', fontsize=10, fontweight='bold')
         ax.set_ylabel('Avg. cumulative explained variance')
         ax.set_xlabel('Num. components (k)')
         ax.set_ylim(0.0, 1.05)
         ax.grid(True, alpha=0.3)
         ax.legend()
 
+        # Method 2: Explained variance over num components
         ax = axes[row_idx, 4]
-        ax.plot(components_list, ev_v_avg, label="V", marker='s', linewidth=2, markersize=6, color="tab:green")
+        ax.plot(components_list, ev_method_2_avg, label="Method 2", marker='s', linewidth=2, markersize=6, color="tab:green")
         ax.axhline(0.9, linestyle=":", color="gray", linewidth=2.0, label="Threshold = 0.9")
-        if components_list[0] <= k90_v_avg <= components_list[-1]:
-            ax.axvline(k90_v_avg, linestyle=":", color="tab:green", linewidth=1.5)
-            ax.text(k90_v_avg, 0.95, f"  k={k90_v_avg}", fontsize=8, color="tab:green")
-        ax.set_title(f'Expl. Var V - Head {head}', fontsize=10, fontweight='bold')
+        if components_list[0] <= k90_method_2_avg <= components_list[-1]:
+            ax.axvline(k90_method_2_avg, linestyle=":", color="tab:green", linewidth=1.5)
+            ax.text(k90_method_2_avg, 0.95, f"  k={k90_method_2_avg}", fontsize=8, color="black")
+        ax.set_title(f'Expl. Var Method 2 - Head {head}', fontsize=10, fontweight='bold')
         ax.set_ylabel('Avg. cumulative explained variance')
         ax.set_xlabel('Num. components (k)')
         ax.set_ylim(0.0, 1.05)
         ax.grid(True, alpha=0.3)
         ax.legend()
 
+        # Method 3: Explained variance over num components
         ax = axes[row_idx, 5]
-        ax.plot(components_list, ev_joint_avg, label="K & V", marker='^', linewidth=2, markersize=6, color="tab:blue")
+        ax.plot(components_list, ev_method_3_avg, label="Method 3", marker='^', linewidth=2, markersize=6, color="tab:blue")
         ax.axhline(0.9, linestyle=":", color="gray", linewidth=2.0, label="Threshold = 0.9")
-        if components_list[0] <= k90_joint_avg <= components_list[-1]:
-            ax.axvline(k90_joint_avg, linestyle=":", color="tab:blue", linewidth=1.5)
-            ax.text(k90_joint_avg, 0.95, f"  k={k90_joint_avg}", fontsize=8, color="tab:blue")
-        ax.set_title(f'Expl. Var K&V - Head {head}', fontsize=10, fontweight='bold')
+        if components_list[0] <= k90_method_3_avg <= components_list[-1]:
+            ax.axvline(k90_method_3_avg, linestyle=":", color="tab:blue", linewidth=1.5)
+            ax.text(k90_method_3_avg, 0.95, f"  k={k90_method_3_avg}", fontsize=8, color="black")
+        ax.set_title(f'Expl. Var Method 3 - Head {head}', fontsize=10, fontweight='bold')
         ax.set_ylabel('Avg. cumulative explained variance')
         ax.set_xlabel('Num. components (k)')
         ax.set_ylim(0.0, 1.05)
         ax.grid(True, alpha=0.3)
         ax.legend()
 
-    fig.suptitle('PCA Analysis - Averaged Across Pages (All Heads)', fontsize=16, fontweight='bold')
-    fig.tight_layout()
-    fig.savefig(figures_dir / 'pca_analysis_avg_across_pages.pdf', dpi=150)
+    fig.suptitle('PCA Analysis - Averaged Across Pages (All Heads)', fontsize=14, fontweight='bold', y=0.995)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig('reports/figures/pca_analysis_avg_across_pages.pdf', dpi=150)
     plt.close(fig)
 
             
