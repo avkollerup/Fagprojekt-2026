@@ -21,11 +21,12 @@ def load_model():
     Returns:
         tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
     """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         dtype=torch.bfloat16,
-        device_map=device)
+        device_map=device,
+        low_cpu_mem_usage=True)
     tokenizer = _get_tokenizer()
 
     print("-------------- MODEL DEVICE --------------")

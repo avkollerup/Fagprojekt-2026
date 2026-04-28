@@ -1,3 +1,7 @@
+# # UDKOMMENTER for kun at bruge gpu 0
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
