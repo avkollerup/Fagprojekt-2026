@@ -1,7 +1,7 @@
 from sklearn.cluster import KMeans
 import torch
-from fagprojekt.model import get_messages, get_kvq
-from fagprojekt.SVD import compare_attention, method_1
+from fagprojekt.model import get_messages, get_kvq, get_true_attention_values
+from fagprojekt.SVD import compare_attention
 
 
 def k_means_clustering(key_head, value_head, query_head, clusters=8):
@@ -47,13 +47,13 @@ if __name__ == "__main__":
     messages, _, _ = get_messages(path, num_tokens=num_tokens)
     key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
 
-    attn_values = k_means_clustering(key_head, value_head, query_head, clusters=clusters)
+    attn_values_k_means = k_means_clustering(key_head, value_head, query_head, clusters=clusters)
 
     # --------------- Compare attention ---------------
 
     # Compare K-means with SVD 
-    attn_values_method_1 = method_1(key_head, query_head, value_head, k=k)
-    compare_attention(attn_values_method_1, attn_values, "K-means with Method 1")
+    attn_values_true = get_true_attention_values(query_head, key_head, value_head, k=k)
+    compare_attention(attn_values_true, attn_values_k_means, "K-means with SVD")
 
     # Compare K-means with Hokus Pokus
     # MANGLER
