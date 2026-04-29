@@ -1,21 +1,8 @@
-# imports 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-
 from fagprojekt.SVD import do_SVD
-from fagprojekt.model import (
-load_model,
-get_kvq,
-get_messages,
-)
-
-from collections import defaultdict
+from fagprojekt.model import (get_kvq)
 import torch
 import torch.nn.functional as F
 import math
-import matplotlib.pyplot as plt
-
-print("hej")
 
 def find_token_positions(tokenizer, messages, needle):
     # take messages (system + user + assistant format) and converts it into the exact token sequence the model sees
@@ -96,61 +83,74 @@ def method_1_K(key_head, k=50):
 
     return K
 
-#------------------------EVALUATION--------------------------
-# load model only once 
-model,tokenizer = load_model()
+def find_needle_heads(model, tokenizer, messages, needle, top_k=20):
+    # Find the token positions of the needle in the full model input
+    needle_positions = find_token_positions(tokenizer, messages, needle)
 
-# Choose the document containing the needle
-path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{1}.txt'
+    # Stop if the needle cannot be found, since the attention score would be meaningless
+    if len(needle_positions) == 0:
+        raise ValueError("Needle not found in tokenized input.")
 
-# Create the chat messages
-messages, prompt, needle = get_messages(path, num_tokens=100)
-print(messages)
+    # Store the attention score for each layer/head pair
+    results = []
 
-# Add the true needle answer to the input, so we can inspect attention from the answer tokens (already there?)
-# messages[1]["content"] += " " + needle
+    # Number of transformer layers and KV heads to scan
+    n_layers = len(model.model.layers)
+    n_heads = model.config.num_key_value_heads
 
-# Extract K, V, and Q
-key_head, value_head, query_head = get_kvq(
-    messages,
-    layer_idx=0,
-    head_idx=0,
-    want_print=False,
-    model=model,
-    tokenizer=tokenizer,
-)
+    # Loop through every layer and KV head
+    for layer_idx in range(n_layers):
+        for head_idx in range(n_heads):
 
-# Find the exact token positions where the needle appears in the full model input
-needle_positions = find_token_positions(tokenizer, messages, needle)
-print("Needle:", needle)
-print("Needle positions:", needle_positions)
+            # Extract Q, K and V for the current layer/head
+            key_head, value_head, query_head = get_kvq(
+                messages,
+                layer_idx=layer_idx,
+                head_idx=head_idx,
+                want_print=False,
+                model=model,
+                tokenizer=tokenizer,
+            )
 
-# Approximate the key matrix using SVD method 1
-key_approx = method_1_K(key_head)
+            # Compute attention weights and attention output for this head
+            A, O = get_attention_output(query_head, key_head, value_head)
 
-# Keep V unchanged for this first test, so we only test the effect of approximating K
-value_approx = value_head
+            # Use the last token as the query token
+            q_idx = -1
 
-# Compare true attention/output with approximated attention/output
-A_true, A_approx, O_true, O_approx = evaluate_head(
-    query_head,
-    key_head,
-    value_head,
-    key_approx,
-    value_approx,
-    needle_positions,
-)
+            # Total attention mass placed on all needle tokens
+            needle_attention = A[q_idx, needle_positions].sum().item()
 
-# Plot the attention of the last query token using the true KV-cache
-plt.plot(A_true[-1].detach().cpu(), label="True attention")
+            # Largest single-token attention value for this query
+            max_attention = A[q_idx].max().item()
 
-# Plot the attention of the last query token using the KV-cache with the approximated K
-plt.plot(A_approx[-1].detach().cpu(), label="Approx attention")
+            # Average attention over all tokens for this query
+            mean_attention = A[q_idx].mean().item()
 
-# Highlight where in the plot where the needle tokens are located
-plt.axvspan(needle_positions[0], needle_positions[-1], alpha=0.2)
+            # Save scores for this layer/head
+            results.append({
+                "layer": layer_idx,
+                "head": head_idx,
+                "needle_attention": needle_attention,
+                "max_attention": max_attention,
+                "mean_attention": mean_attention,
+            })
 
-plt.legend()
-plt.savefig("reports/figures/eval.png", dpi=150)
-plt.close()
+    # Sort heads by how much attention they place on the needle
+    results = sorted(
+        results,
+        key=lambda x: x["needle_attention"],
+        reverse=True,
+    )
 
+    # Print the best scoring heads
+    print("\n--- TOP NEEDLE HEADS ---")
+    for r in results[:top_k]:
+        print(
+            f"layer={r['layer']:2d}, head={r['head']:2d} | "
+            f"needle_attn={r['needle_attention']:.6f} | "
+            f"max_attn={r['max_attention']:.6f} | "
+            f"mean_attn={r['mean_attention']:.6f}"
+        )
+
+    return results
