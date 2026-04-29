@@ -23,7 +23,7 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
     kv_concat = torch.cat((key_head, value_head), dim=-1) # [T, 2C]
 
     # fit and transform to cluster space
-    kmeans.fit(kv_concat) 
+    kmeans.fit(kv_concat.cpu().numpy())  # convert to CPU numpy array
     centroids = torch.tensor(kmeans.cluster_centers_, device=kv_concat.device, dtype=kv_concat.dtype)  # [clusters, 2C]
 
     # split the clustered space back into key and value components
@@ -37,7 +37,6 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
 if __name__ == "__main__":
     # --------------- PARAMETERS --------------
     path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    k = 100
     num_tokens = 100
     layer_idx = 0
     head_idx = 0
@@ -52,11 +51,8 @@ if __name__ == "__main__":
     # --------------- Compare attention ---------------
 
     # Compare K-means with SVD 
-    attn_values_true = get_true_attention_values(query_head, key_head, value_head, k=k)
+    attn_values_true = get_true_attention_values(query_head, key_head, value_head)
     compare_attention(attn_values_true, attn_values_k_means, "K-means with SVD")
 
     # Compare K-means with Hokus Pokus
     # MANGLER
-
-
-    # Der er en eller anden error med GPU og CPU!!!!!!!!!!!!!!!
