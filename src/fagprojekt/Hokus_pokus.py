@@ -1,23 +1,27 @@
 # # UDKOMMENTER for kun at bruge gpu 0
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 import torch
+print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
+print(f"Available GPUs: {torch.cuda.device_count()}")
+print(f"Current device: {torch.cuda.current_device()}")
 import torch.nn as nn
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from fagprojekt.SVD import decompose_K, method_1, compare_attention
+from fagprojekt.evaluate import compare_attention
 from fagprojekt.model import get_kvq, get_messages
 
 
-def build_mlp(seq_len,k):
+def build_mlp(k):
     """A small feed-forward network."""
     return nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(seq_len*k, 784),
+        nn.Linear(k, 784),
         nn.ReLU(),
-        nn.Linear(784, seq_len*k),
-        nn.Unflatten(0,(seq_len,k)),
+        nn.Linear(784, k),
+        nn.Softmax(dim=-1)
     )
 
 
@@ -37,11 +41,11 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     """
 
     # QB
-    print(query_head.size())
-    print(b_mat.size())
-    input_data = (query_head @ b_mat)
+    # print(query_head.size())
+    # print(b_mat.size())
+    input_data = query_head @ b_mat
     
-    print(input_data.size())
+    # print(input_data.size())
     # g(QB), where g is the identity function
     if method == "identity":
         transformed_input_data = input_data
@@ -55,7 +59,7 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
 
 
 
-def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
+def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
     """Train g_theta to mimic the baseline approximation.
 
     Args:
@@ -71,22 +75,35 @@ def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
 
     if method != "mlp":
         raise ValueError("Method not mlp")
-
-    messages, _, _ = get_messages(path, num_tokens=100)
-
-    key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
-    true_attn = method_1(key_head, query_head, value_head, k=k).detach()
-
-    # Perform SVD decomposition of K to get A and B matrices
-    a_mat, b_mat = decompose_K(key_head, k=k)
-
-    seq_len = query_head.shape[0]
-    g_theta = build_mlp(seq_len,k).to(query_head.device)
+    
+    # load model and tokenizer once to avoid doing it every step
+    model, tokenizer = load_model()
+    # initialize g_theta, optimizer and loss function
+    g_theta = build_mlp(k).to(model.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
-
+    loss_fn = torch.nn.CosineEmbeddingLoss()
     train_loss = []
 
-    for step in range(epochs):
+    step=0
+    for path in paths:
+
+        # get messages for path
+        messages, _, _ = get_messages(path, num_tokens=100)
+
+        # Use no_grad to prevent graph tracking from model
+        # extract the heads
+        with torch.no_grad():
+            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
+                                                       want_print=False, model=model, tokenizer=tokenizer   )
+
+        true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
+
+        # Perform SVD decomposition of K to get A and B matrices
+        a_mat, b_mat = decompose_K(key_head, k=k)
+        # Detach to break computation graph (a_mat, b_mat are fixed, not trainable)
+        a_mat = a_mat.detach()
+        b_mat = b_mat.detach()
+    
         optimizer.zero_grad()
 
         y_pred = hokus_pokus(
@@ -98,14 +115,16 @@ def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
             g_theta=g_theta,
         )
 
-        loss = torch.nn.functional.mse_loss(true_attn, y_pred)
+        loss = loss_fn(true_attn, y_pred, torch.ones(true_attn.size(0), device=true_attn.device))
+        train_loss.append(loss.clone().item())
         
         loss.backward()
         optimizer.step()
-        train_loss.append(loss.item())
 
-        if step % 100 == 0:
-            print(f"step={step} loss={loss.item():.6e}")
+
+        if step % 2 == 0:
+            print(f"step={step} loss={train_loss[-1]:.6e}")
+        step += 1
 
     # Plotting
     output_path = f"reports/figures/hokus_pokus_train_loss_{method}.png"
@@ -114,17 +133,18 @@ def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
     plt.plot(train_loss, linewidth=2)
     plt.title("Hokus Pokus Training Loss")
     plt.xlabel("Step")
-    plt.ylabel("MSE Loss")
+    plt.ylabel("1 - Cosine Similarity")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
     print(f"Saved train-loss plot to {output_path}")
 
+
     return g_theta
 
 
-def compare_hokus_pokus(path, method, model_path, k=50):
+def compare_hokus_pokus(path, method, model_path, k=50,layer_idx=0, head_idx=0):
     """Load a saved model checkpoint and compare it against true attention.
 
     Args:
@@ -136,24 +156,27 @@ def compare_hokus_pokus(path, method, model_path, k=50):
     Returns:
         The comparison output tensor.
     """
+
     messages, _, _ = get_messages(path, num_tokens=100)
-    key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
+
+    # Use no_grad to prevent graph tracking from model
+    with torch.no_grad():
+        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
+
     true_attn = method_1(key_head, query_head, value_head, k=k).detach()
     
     # Perform SVD decomposition of K to get A and B matrices
     a_mat, b_mat = decompose_K(key_head, k=k)
+    # Detach to break computation graph
+    a_mat = a_mat.detach()
+    b_mat = b_mat.detach()
 
-    # scale a_mat and b_mat to ensure that the scale does not explode
-    alpha = torch.linalg.norm(a_mat, axis=1)
-    a_mat = a_mat @ torch.linalg.inv(torch.diag(alpha))
-    b_mat = torch.diag(alpha) @ b_mat
 
     if method == "identity":
         loaded_g_theta = None
     
     elif method == "mlp":
-        seq_len = query_head.shape[0]
-        loaded_g_theta = build_mlp(seq_len).to(query_head.device)
+        loaded_g_theta = build_mlp(k).to(query_head.device)
         loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
         loaded_g_theta.eval()
 
@@ -167,25 +190,35 @@ def compare_hokus_pokus(path, method, model_path, k=50):
         b_mat=b_mat,
         method=method,
         g_theta=loaded_g_theta,
-    ).detach()
+    ).clone()
     compare_attention(true_attn, final_attn, "Hokus Pokus vs true_attn")
 
     return final_attn
 
 
 if __name__ == "__main__":
-    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
+    # create list of paths for training
+    base_dir = Path("document-haystack/AIG/AIG_10Pages/Text_TextNeedles")
+    paths = list(base_dir.glob("*.txt"))
+    paths = [str(p) for p in paths]
+
+    # test path which is unseen during training
+    test_path = "document-haystack/AmericanAirlines/AmericanAirlines_5Pages/Text_TextNeedles/AmericanAirlines_5Pages_TextNeedles_page_1.txt"
+    
+    # define method
     method = "mlp"
 
+    # if we just use the identity method, there is no need for training
     if method == "identity":
-        compare_hokus_pokus(path=path, method=method, model_path=None, k=50)
+        compare_hokus_pokus(path=test_path, method=method, model_path=None, k=50)
+
     else:
-        # Train model
-        g_theta = train(path=path, method=method)
+        # Train model on the training paths
+        g_theta = train(paths, method=method,layer_idx=28,head_idx=0)
 
         # Save model
         model_path = f"models/g_theta_weights_{method}.pth"
         torch.save(g_theta.state_dict(), model_path)
 
         # Load and compare model   
-        compare_hokus_pokus(path=path, method=method, model_path=model_path, k=50)
+        compare_hokus_pokus(path=test_path, method=method, model_path=model_path, k=50,layer_idx=28, head_idx=0)
