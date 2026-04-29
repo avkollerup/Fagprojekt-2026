@@ -1,6 +1,6 @@
 # # UDKOMMENTER for kun at bruge gpu 0
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 import torch
 print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
@@ -10,7 +10,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from fagprojekt.SVD import decompose_K, method_1, compare_attention
+from fagprojekt.SVD import decompose_K, compare_attention
 from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
 
 
@@ -58,7 +58,7 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
 
 
 
-def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
+def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine'):
     """Train g_theta to mimic the baseline approximation.
 
     Args:
@@ -75,11 +75,15 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
         raise ValueError("Method not mlp")
     
     # load model and tokenizer once to avoid doing it every step
-    model, tokenizer = load_model()
+    model, tokenizer = load_model(want_print=False)
     # initialize g_theta, optimizer and loss function
     g_theta = build_mlp(k).to(model.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
-    loss_fn = torch.nn.MSELoss()
+    if loss_method == 'cosine':
+        loss_fn = torch.nn.CosineEmbeddingLoss()
+    elif loss_method == 'mse':
+        loss_fn = torch.nn.MSELoss()
+    
     train_loss = []
 
     step=0
@@ -89,11 +93,10 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
         messages, _, _ = get_messages(path, num_tokens=100)
 
         # Use no_grad to prevent graph tracking from model
-        # extract the heads
+        # extract the heads and true attention values
         with torch.no_grad():
             key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
                                                        want_print=False, model=model, tokenizer=tokenizer)
-
         true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
 
         # Perform SVD decomposition of K to get A and B matrices
@@ -101,8 +104,6 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
         # Detach to break computation graph (a_mat, b_mat are fixed, not trainable)
         a_mat = a_mat.detach()
         b_mat = b_mat.detach()
-    
-        optimizer.zero_grad()
 
         y_pred = hokus_pokus(
             query_head=query_head,
@@ -113,15 +114,27 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
             g_theta=g_theta,
         )
 
-        loss = loss_fn(true_attn, y_pred)
+
+        # compute loss based on method
+        if loss_method == 'cosine':
+            loss = loss_fn(y_pred.flatten(), true_attn.flatten(), torch.tensor(1, device=y_pred.device))
+        elif loss_method == 'cosine_manual':
+            cos_sim = torch.nn.functional.cosine_similarity(
+                true_attn.flatten(),y_pred.flatten(), dim=0)
+            loss = 1 - cos_sim  # Minimize this to maximize similarity
+        elif loss_method == 'mse':
+            loss = loss_fn(y_pred, true_attn)
         train_loss.append(loss.clone().item())
         
+        # zero the gradients before backward pass
+        optimizer.zero_grad()
+
+        # step and backwardpass
         loss.backward()
         optimizer.step()
 
 
-        if step % 2 == 0:
-            print(f"step={step} loss={train_loss[-1]:.6e}")
+        print(f"step={step} loss={train_loss[-1]:.6e}")
         step += 1
 
     # Plotting
@@ -198,10 +211,9 @@ if __name__ == "__main__":
     # number of components to keep in SVD decomposition
     k=100
     # create list of paths for training
-    base_dir = Path("document-haystack/AIG/AIG_15Pages/Text_TextNeedles")
+    base_dir = Path("document-haystack/AIG/AIG_10Pages/Text_TextNeedles")
     paths = list(base_dir.glob("*.txt"))
     paths = [str(p) for p in paths]
-
     # test path which is unseen during training
     test_path = "document-haystack/AmericanAirlines/AmericanAirlines_5Pages/Text_TextNeedles/AmericanAirlines_5Pages_TextNeedles_page_2.txt"
     
@@ -213,12 +225,15 @@ if __name__ == "__main__":
         compare_hokus_pokus(path=test_path, method=method, model_path=None, k=k)
 
     else:
-        # Train model on the training paths
-        g_theta = train(paths, method=method,layer_idx=28,head_idx=0,k=k)
+        for loss_method in ['mse', 'cosine','cosine_manual']:
+            print(f"Training with loss method: {loss_method}")
 
-        # Save model
-        model_path = f"models/g_theta_weights_{method}.pth"
-        torch.save(g_theta.state_dict(), model_path)
+            # Train model on the training paths
+            g_theta = train(paths, method=method,layer_idx=28,head_idx=0,k=k)
 
-        # Load and compare model   
-        compare_hokus_pokus(path=test_path, method=method, model_path=model_path, k=k,layer_idx=28, head_idx=0)
+            # Save model
+            model_path = f"models/g_theta_weights_{method}.pth"
+            torch.save(g_theta.state_dict(), model_path)
+
+            # Load and compare model   
+            compare_hokus_pokus(path=test_path, method=method, model_path=model_path, k=k,layer_idx=28, head_idx=0)

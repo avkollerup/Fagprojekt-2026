@@ -15,7 +15,7 @@ def _get_tokenizer() -> AutoTokenizer:
     """Return a cached tokenizer instance for consistent token counting."""
     return AutoTokenizer.from_pretrained(MODEL_ID)
 
-def load_model():
+def load_model(want_print=True):
     """Load the LLM and tokenizer.
 
     Returns:
@@ -29,11 +29,12 @@ def load_model():
         low_cpu_mem_usage=True)
     tokenizer = _get_tokenizer()
 
-    print("-------------- MODEL DEVICE --------------")
-    # Bare et tjek at den rent faktisk kører på GPU haha
-    if torch.cuda.is_available():
-        print(torch.cuda.get_device_name(0))
-    print(model.device)
+    if want_print:
+        print("-------------- MODEL DEVICE --------------")
+        # Bare et tjek at den rent faktisk kører på GPU haha
+        if torch.cuda.is_available():
+            print(torch.cuda.get_device_name(0))
+        print(model.device)
 
     return model, tokenizer
 
