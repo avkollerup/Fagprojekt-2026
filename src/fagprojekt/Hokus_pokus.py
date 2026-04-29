@@ -130,6 +130,7 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
 
 if __name__ == "__main__":
     path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    g_theta = train(path=path, method="mlp")
+    method = "mlp"
+    g_theta = train(path=path, method=method)
     # Save model
-    torch.save(g_theta.state_dict(), "models/g_theta_weights.pth")
+    torch.save(g_theta.state_dict(), f"models/g_theta_weights_{method}.pth")
