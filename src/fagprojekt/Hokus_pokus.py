@@ -6,8 +6,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
-from fagprojekt.SVD import decompose_K, method_1
-from fagprojekt.evaluate import compare_attention
+from fagprojekt.SVD import decompose_K, method_1, compare_attention
 from fagprojekt.model import get_kvq, get_messages
 
 
