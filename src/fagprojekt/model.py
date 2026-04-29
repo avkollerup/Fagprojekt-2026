@@ -171,7 +171,7 @@ def extract_query(model, inputs, layer_idx, head_idx):
     query_head = query[0, head_idx]
     return query, query_head
 
-def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False,model=None,tokenizer=None):
+def get_kvq(messages, layer_idx, head_idx, want_print=False, model=None, tokenizer=None):
     # Load model if not given
     if model == None:
         model, tokenizer = load_model()
@@ -182,14 +182,14 @@ def get_kvq(messages, layer_idx=0, head_idx=0,want_print=False,model=None,tokeni
     inputs, outputs, generated_tokens = get_response(model, tokenizer, messages)
 
     # KV cache
-    KV_cache, key, value, key_head, value_head = extract_KV(outputs, layer_idx, head_idx)
+    KV_cache, key, value, key_head, value_head = extract_KV(outputs, layer_idx=layer_idx, head_idx=head_idx)
 
     # Get query matrix
     query_inputs = {
         "input_ids": generated_tokens.unsqueeze(0),
         "attention_mask": torch.ones_like(generated_tokens).unsqueeze(0),
     }
-    query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
+    query, query_head = extract_query(model, query_inputs, layer_idx=layer_idx, head_idx=head_idx)
 
     # Resize Q to T-1:
     kv_seq_len = key.shape[2]

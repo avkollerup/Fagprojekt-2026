@@ -15,7 +15,7 @@ def do_SVD(matrix):
     return U, s, Vt
 
 
-def method_1(key_head, query_head, value_head, k=50):
+def method_1(key_head, query_head, value_head, k):
     """Method 1: Decomposition of the key matrix only"""
     U_K, s_K, Vt_K = do_SVD(key_head)
 
@@ -29,7 +29,7 @@ def method_1(key_head, query_head, value_head, k=50):
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ value_head
     return attn_values
 
-def decompose_K(key_head, k=50):
+def decompose_K(key_head, k):
     U_K, s_K, Vt_K = do_SVD(key_head)
 
     k_eff = min(k, s_K.shape[0])
@@ -42,7 +42,7 @@ def decompose_K(key_head, k=50):
     return A, B
 
 
-def method_2(key_head, query_head, value_head, k=50):
+def method_2(key_head, query_head, value_head, k):
     """Method 2: Decomposition of the key and value matrix seperately"""
     U_K, s_K, Vt_K = do_SVD(key_head)
     U_V, s_V, Vt_V = do_SVD(value_head)
@@ -59,7 +59,7 @@ def method_2(key_head, query_head, value_head, k=50):
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
     return attn_values
 
-def method_3(key_head, query_head, value_head, k=50):
+def method_3(key_head, query_head, value_head, k):
     """Method 3: Jointly decompose key and value matrix"""
     # Stack features horizontally:
     joint = torch.cat((key_head, value_head), dim=1)
@@ -106,17 +106,25 @@ def compare_attention(true_attn, approx_attn, name):
 
 
 if __name__ == "__main__":
+    # --------------- PARAMETERS --------------
     path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    messages, prompt, needle = get_messages(path, num_tokens=100)
+    k = 100
+    num_tokens = 100
+    layer_idx = 0
+    head_idx = 0
 
-    key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
+    # ---------------- Do the 3 SVD methods ----------------
+    messages, prompt, needle = get_messages(path, num_tokens=num_tokens)
 
-    attn_values_method_1 = method_1(key_head, query_head, value_head, k=50)
-    attn_values_method_2 = method_2(key_head, query_head, value_head, k=50)
-    attn_values_method_3 = method_3(key_head, query_head, value_head, k=50)
+    key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
+
+    attn_values_method_1 = method_1(key_head, query_head, value_head, k=k)
+    attn_values_method_2 = method_2(key_head, query_head, value_head, k=k)
+    attn_values_method_3 = method_3(key_head, query_head, value_head, k=k)
 
     print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.size(),attn_values_method_2.size(),attn_values_method_3.size())
 
+    # --------------- Compare the 3 SVD methods with the true attention values ---------------
     true_attn_values = get_true_attention_values(query_head, key_head, value_head)
     print(f"True attention values dimension: {true_attn_values.shape}\n")
 

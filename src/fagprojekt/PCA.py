@@ -35,6 +35,7 @@ def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
 
 # do big principal component analysis
 def pca_analysis(num_tokens,layer_idx):
+    print(f"Num_tokens: {num_tokens}, layer_idx: {layer_idx}")
 
     # load model only once
     model,tokenizer = load_model()
@@ -62,8 +63,9 @@ def pca_analysis(num_tokens,layer_idx):
         # perform for each head
         heads = range(0,5)
         for head in heads:
+            print(f"Page {page}, head {head}")
             # Get K, V, Q 
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head, want_print=True, model=model, tokenizer=tokenizer)
+            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head, want_print=False, model=model, tokenizer=tokenizer)
 
             # Explained variance for K, V, and KV-joint
             ev_k = cumulative_explained_variance_for_components(key_head, components_list)
@@ -200,11 +202,14 @@ def pca_analysis(num_tokens,layer_idx):
 
     fig.suptitle(f'PCA Analysis - Layer {layer_idx} - Averaged Across Pages (All Heads) - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    fig.savefig(f'reports/figures/pca_analysis_avg_across_pages_layer_{layer_idx}.pdf', dpi=150)
+    fig.savefig(f'reports/figures/pca_analysis_avg_across_pages_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
     plt.close(fig)
 
             
 if __name__ == "__main__":
-    num_tokens = 500
-    layer_idx = 27
-    pca_analysis(num_tokens, layer_idx)
+    # --------------- PARAMETERS --------------
+    num_tokens = 300
+    layer_idx = 0
+
+    # --------------- PCA analysis ---------------
+    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx)

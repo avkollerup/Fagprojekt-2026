@@ -1,14 +1,10 @@
 from sklearn.cluster import KMeans
 import torch
 from fagprojekt.model import get_messages, get_kvq
+from fagprojekt.SVD import compare_attention, method_1
 
 
-path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-messages, _, _ = get_messages(path, num_tokens=100)
-
-key_head, _, _ = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
-
-def k_means_clustering(query_head,value_head,key_head, clusters=8):
+def k_means_clustering(key_head, value_head, query_head, clusters=8):
     """ Perform K-means clustering on the key and value head representations and 
     compute attention values using the clustered representations. 
     
@@ -37,3 +33,30 @@ def k_means_clustering(query_head,value_head,key_head, clusters=8):
     attn_values = torch.softmax(query_head @ A.T, dim=-1) @ B
 
     return attn_values
+
+if __name__ == "__main__":
+    # --------------- PARAMETERS --------------
+    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
+    k = 100
+    num_tokens = 100
+    layer_idx = 0
+    head_idx = 0
+    clusters = 8
+
+    # --------------- K-means ---------------
+    messages, _, _ = get_messages(path, num_tokens=num_tokens)
+    key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
+
+    attn_values = k_means_clustering(key_head, value_head, query_head, clusters=clusters)
+
+    # --------------- Compare attention ---------------
+
+    # Compare K-means with SVD 
+    attn_values_method_1 = method_1(key_head, query_head, value_head, k=k)
+    compare_attention(attn_values_method_1, attn_values, "K-means with Method 1")
+
+    # Compare K-means with Hokus Pokus
+    # MANGLER
+
+
+    # Der er en eller anden error med GPU og CPU!!!!!!!!!!!!!!!
