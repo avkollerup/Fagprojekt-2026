@@ -89,7 +89,7 @@ def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
     
     # scale a_mat and b_mat to ensure that the scale does not explode
     alpha = torch.linalg.norm(a_mat,axis=1)
-    a_mat = a_mat @ torch.inv(torch.diag(alpha))
+    a_mat = a_mat @ torch.linalg.inv(torch.diag(alpha))
     b_mat = torch.diag(alpha) @ b_mat
 
     seq_len = query_head.shape[0]
@@ -157,7 +157,7 @@ def compare_hokus_pokus(path, method, model_path, k=50):
 
     # scale a_mat and b_mat to ensure that the scale does not explode
     alpha = torch.linalg.norm(a_mat, axis=1)
-    a_mat = a_mat @ torch.inv(torch.diag(alpha))
+    a_mat = a_mat @ torch.linalg.inv(torch.diag(alpha))
     b_mat = torch.diag(alpha) @ b_mat
 
     if method == "identity":
