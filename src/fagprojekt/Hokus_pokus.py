@@ -44,26 +44,30 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     seq_len = query_head.shape[0]
     M = torch.triu(torch.full((seq_len, seq_len), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
+    # M + QB
     input_data = M + (query_head @ b_mat)
-
+    
+    # g(M + QB), where g is the identity function
     if method == "identity":
         transformed_input_data = input_data
+
+    # g(M + QB), where g is an MLP
     elif method == "mlp":
         transformed_input_data = g_theta(input_data)
 
-    # weights = torch.softmax(transformed_input_data, dim=-1)
+    # Hokus pokus: g(M + QB)A^TV
     return transformed_input_data @ a_mat.T @ value_head
 
 
 
 
 
-def train(path, method, epochs = 500, lr = 1e-3, k = 50):
+def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
     """Train g_theta to mimic the baseline approximation.
 
     Args:
         path: Path to the page from Needle-in-a-Haystack to use in the prompt
-        method: Either "identity" or "mlp".
+        method:  "mlp".
         epochs: Number of optimization steps.
         lr: Learning rate for Adam.
         k: Rank used for K decomposition.
@@ -71,6 +75,10 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     Returns:
         The trained g_theta module.
     """
+
+    if method != "mlp":
+        raise ValueError("Method not mlp")
+
     messages, _, _ = get_messages(path, num_tokens=100)
 
     key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
@@ -112,7 +120,7 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
             print(f"step={step} loss={loss.item():.6e}")
 
     # Plotting
-    output_path = "reports/figures/hokus_pokus_train_loss.png"
+    output_path = f"reports/figures/hokus_pokus_train_loss_{method}.png"
 
     plt.figure(figsize=(8, 4))
     plt.plot(train_loss, linewidth=2)
@@ -128,7 +136,7 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     return g_theta
 
 
-def load_and_compare_saved_model(path, method, model_path, k=50):
+def compare_hokus_pokus(path, method, model_path, k=50):
     """Load a saved model checkpoint and compare it against true attention.
 
     Args:
@@ -143,16 +151,25 @@ def load_and_compare_saved_model(path, method, model_path, k=50):
     messages, _, _ = get_messages(path, num_tokens=100)
     key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
     true_attn = method_1(key_head, query_head, value_head, k=k).detach()
-
+    
+    # Perform SVD decomposition of K to get A and B matrices
     a_mat, b_mat = decompose_K(key_head, k=k)
+
+    # scale a_mat and b_mat to ensure that the scale does not explode
     alpha = torch.linalg.norm(a_mat, axis=1)
     a_mat = a_mat @ torch.inv(torch.diag(alpha))
     b_mat = torch.diag(alpha) @ b_mat
 
-    seq_len = query_head.shape[0]
-    loaded_g_theta = build_mlp(seq_len).to(query_head.device)
-    loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
-    loaded_g_theta.eval()
+    if method == "identity":
+        loaded_g_theta = None
+
+    if method == "mlp":
+        seq_len = query_head.shape[0]
+        loaded_g_theta = build_mlp(seq_len).to(query_head.device)
+        loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
+        loaded_g_theta.eval()
+    else:
+        raise ValueError("Method not mlp or identity")
 
     final_attn = hokus_pokus(
         query_head=query_head,
@@ -170,8 +187,16 @@ def load_and_compare_saved_model(path, method, model_path, k=50):
 if __name__ == "__main__":
     path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
     method = "mlp"
-    g_theta = train(path=path, method=method)
-    # Save model
-    model_path = f"models/g_theta_weights_{method}.pth"
-    torch.save(g_theta.state_dict(), model_path)
-    load_and_compare_saved_model(path=path, method=method, model_path=model_path, k=50)
+
+    if method == "identity":
+        compare_hokus_pokus(path=path, method=method, model_path=None, k=50)
+    else:
+        # Train model
+        g_theta = train(path=path, method=method)
+
+        # Save model
+        model_path = f"models/g_theta_weights_{method}.pth"
+        torch.save(g_theta.state_dict(), model_path)
+
+        # Load and compare model   
+        compare_hokus_pokus(path=path, method=method, model_path=model_path, k=50)
