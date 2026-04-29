@@ -106,4 +106,13 @@ HUGGINGFACE_HUB_TOKEN=your huggingface API token
 4. Run the data.py file
 
 
+# Interactive GPUs
+Login into Thinlinc and write in terminal:
+
+- 1 interactive V100-node with NVlink reachable via `sxm2sh`
+- 1 interactive A100-node with NVlink reachable via `a100sh`
+
+Write:
+
+`code tunnel`
 
