@@ -1,6 +1,6 @@
 # # UDKOMMENTER for kun at bruge gpu 0
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import torch
 import torch.nn as nn
@@ -11,19 +11,14 @@ from fagprojekt.evaluate import compare_attention
 from fagprojekt.model import get_kvq, get_messages
 
 
-def build_mlp(feature_dim):
-    """Build a simple MLP for row-wise score transformation.
-
-    Args:
-        feature_dim: Number of features per row.
-
-    Returns:
-        A small feed-forward network.
-    """
+def build_mlp(seq_len,k):
+    """A small feed-forward network."""
     return nn.Sequential(
-        nn.Linear(feature_dim, feature_dim),
+        nn.Flatten(),
+        nn.Linear(seq_len*k, 784),
         nn.ReLU(),
-        nn.Linear(feature_dim, feature_dim),
+        nn.Linear(784, seq_len*k),
+        nn.Unflatten(0,(seq_len,k)),
     )
 
 
@@ -41,24 +36,23 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     Returns:
         Approximated attention values with shape [seq_len, head_dim].
     """
-    seq_len = query_head.shape[0]
-    M = torch.triu(torch.full((seq_len, seq_len), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
-    # M + QB
-    input_data = M + (query_head @ b_mat)
+    # QB
+    print(query_head.size())
+    print(b_mat.size())
+    input_data = (query_head @ b_mat)
     
-    # g(M + QB), where g is the identity function
+    print(input_data.size())
+    # g(QB), where g is the identity function
     if method == "identity":
         transformed_input_data = input_data
 
-    # g(M + QB), where g is an MLP
+    # g(QB), where g is an MLP
     elif method == "mlp":
         transformed_input_data = g_theta(input_data)
 
-    # Hokus pokus: g(M + QB)A^TV
+    # Hokus pokus: g(QB)A^TV
     return transformed_input_data @ a_mat.T @ value_head
-
-
 
 
 
@@ -86,14 +80,9 @@ def train(path, method="mlp", epochs = 500, lr = 1e-3, k = 50):
 
     # Perform SVD decomposition of K to get A and B matrices
     a_mat, b_mat = decompose_K(key_head, k=k)
-    
-    # scale a_mat and b_mat to ensure that the scale does not explode
-    alpha = torch.linalg.norm(a_mat,axis=1)
-    a_mat = a_mat @ torch.linalg.inv(torch.diag(alpha))
-    b_mat = torch.diag(alpha) @ b_mat
 
     seq_len = query_head.shape[0]
-    g_theta = build_mlp(seq_len).to(query_head.device)
+    g_theta = build_mlp(seq_len,k).to(query_head.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
 
     train_loss = []
@@ -162,12 +151,13 @@ def compare_hokus_pokus(path, method, model_path, k=50):
 
     if method == "identity":
         loaded_g_theta = None
-
-    if method == "mlp":
+    
+    elif method == "mlp":
         seq_len = query_head.shape[0]
         loaded_g_theta = build_mlp(seq_len).to(query_head.device)
         loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
         loaded_g_theta.eval()
+
     else:
         raise ValueError("Method not mlp or identity")
 
