@@ -7,6 +7,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 
 from fagprojekt.SVD import decompose_K, method_1
+from fagprojekt.evaluate import compare_attention
 from fagprojekt.model import get_kvq, get_messages
 
 
@@ -86,7 +87,6 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     seq_len = query_head.shape[0]
     g_theta = build_mlp(seq_len).to(query_head.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
-    loss_fn = torch.nn.functional.mse_loss()
 
     train_loss = []
 
@@ -102,7 +102,7 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
             g_theta=g_theta,
         )
 
-        loss = loss_fn(true_attn, y_pred)
+        loss = torch.nn.functional.mse_loss(true_attn, y_pred)
         
         loss.backward()
         optimizer.step()
@@ -128,9 +128,50 @@ def train(path, method, epochs = 500, lr = 1e-3, k = 50):
     return g_theta
 
 
+def load_and_compare_saved_model(path, method, model_path, k=50):
+    """Load a saved model checkpoint and compare it against true attention.
+
+    Args:
+        path: Path to the page from Needle-in-a-Haystack used in the prompt.
+        method: Either "identity" or "mlp".
+        model_path: Path to the saved model checkpoint.
+        k: Rank used for K decomposition.
+
+    Returns:
+        The comparison output tensor.
+    """
+    messages, _, _ = get_messages(path, num_tokens=100)
+    key_head, value_head, query_head = get_kvq(messages, layer_idx=0, head_idx=0, want_print=True)
+    true_attn = method_1(key_head, query_head, value_head, k=k).detach()
+
+    a_mat, b_mat = decompose_K(key_head, k=k)
+    alpha = torch.linalg.norm(a_mat, axis=1)
+    a_mat = a_mat @ torch.inv(torch.diag(alpha))
+    b_mat = torch.diag(alpha) @ b_mat
+
+    seq_len = query_head.shape[0]
+    loaded_g_theta = build_mlp(seq_len).to(query_head.device)
+    loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
+    loaded_g_theta.eval()
+
+    final_attn = hokus_pokus(
+        query_head=query_head,
+        value_head=value_head,
+        a_mat=a_mat,
+        b_mat=b_mat,
+        method=method,
+        g_theta=loaded_g_theta,
+    ).detach()
+    compare_attention(true_attn, final_attn, "Hokus Pokus vs true_attn")
+
+    return final_attn
+
+
 if __name__ == "__main__":
     path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
     method = "mlp"
     g_theta = train(path=path, method=method)
     # Save model
-    torch.save(g_theta.state_dict(), f"models/g_theta_weights_{method}.pth")
+    model_path = f"models/g_theta_weights_{method}.pth"
+    torch.save(g_theta.state_dict(), model_path)
+    load_and_compare_saved_model(path=path, method=method, model_path=model_path, k=50)
