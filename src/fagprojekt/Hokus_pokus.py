@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from fagprojekt.SVD import decompose_K, method_1, compare_attention
-from fagprojekt.evaluate import compare_attention
-from fagprojekt.model import get_kvq, get_messages
+from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
 
 
 def build_mlp(k):
@@ -20,8 +19,8 @@ def build_mlp(k):
     return nn.Sequential(
         nn.Linear(k, 784),
         nn.ReLU(),
-        nn.Linear(784, k),
-        nn.Softmax(dim=-1)
+        nn.Linear(784, k)
+        #nn.Softmax(dim=-1)
     )
 
 
@@ -65,7 +64,6 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
     Args:
         path: Path to the page from Needle-in-a-Haystack to use in the prompt
         method:  "mlp".
-        epochs: Number of optimization steps.
         lr: Learning rate for Adam.
         k: Rank used for K decomposition.
 
@@ -81,7 +79,7 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
     # initialize g_theta, optimizer and loss function
     g_theta = build_mlp(k).to(model.device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
-    loss_fn = torch.nn.CosineEmbeddingLoss()
+    loss_fn = torch.nn.MSELoss()
     train_loss = []
 
     step=0
@@ -94,7 +92,7 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
         # extract the heads
         with torch.no_grad():
             key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
-                                                       want_print=False, model=model, tokenizer=tokenizer   )
+                                                       want_print=False, model=model, tokenizer=tokenizer)
 
         true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
 
@@ -115,7 +113,7 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0):
             g_theta=g_theta,
         )
 
-        loss = loss_fn(true_attn, y_pred, torch.ones(true_attn.size(0), device=true_attn.device))
+        loss = loss_fn(true_attn, y_pred)
         train_loss.append(loss.clone().item())
         
         loss.backward()
@@ -163,7 +161,7 @@ def compare_hokus_pokus(path, method, model_path, k=50,layer_idx=0, head_idx=0):
     with torch.no_grad():
         key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
 
-    true_attn = method_1(key_head, query_head, value_head, k=k).detach()
+    true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
     
     # Perform SVD decomposition of K to get A and B matrices
     a_mat, b_mat = decompose_K(key_head, k=k)
@@ -197,28 +195,30 @@ def compare_hokus_pokus(path, method, model_path, k=50,layer_idx=0, head_idx=0):
 
 
 if __name__ == "__main__":
+    # number of components to keep in SVD decomposition
+    k=100
     # create list of paths for training
-    base_dir = Path("document-haystack/AIG/AIG_10Pages/Text_TextNeedles")
+    base_dir = Path("document-haystack/AIG/AIG_15Pages/Text_TextNeedles")
     paths = list(base_dir.glob("*.txt"))
     paths = [str(p) for p in paths]
 
     # test path which is unseen during training
-    test_path = "document-haystack/AmericanAirlines/AmericanAirlines_5Pages/Text_TextNeedles/AmericanAirlines_5Pages_TextNeedles_page_1.txt"
+    test_path = "document-haystack/AmericanAirlines/AmericanAirlines_5Pages/Text_TextNeedles/AmericanAirlines_5Pages_TextNeedles_page_2.txt"
     
     # define method
     method = "mlp"
 
     # if we just use the identity method, there is no need for training
     if method == "identity":
-        compare_hokus_pokus(path=test_path, method=method, model_path=None, k=50)
+        compare_hokus_pokus(path=test_path, method=method, model_path=None, k=k)
 
     else:
         # Train model on the training paths
-        g_theta = train(paths, method=method,layer_idx=28,head_idx=0)
+        g_theta = train(paths, method=method,layer_idx=28,head_idx=0,k=k)
 
         # Save model
         model_path = f"models/g_theta_weights_{method}.pth"
         torch.save(g_theta.state_dict(), model_path)
 
         # Load and compare model   
-        compare_hokus_pokus(path=test_path, method=method, model_path=model_path, k=50,layer_idx=28, head_idx=0)
+        compare_hokus_pokus(path=test_path, method=method, model_path=model_path, k=k,layer_idx=28, head_idx=0)
