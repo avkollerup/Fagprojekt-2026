@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import matplotlib.pyplot as plt
 
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
-from fagprojekt.head_level_evel_utils import(find_token_positions, evaluate_head, method_1_K, find_needle_heads)
+from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, method_1_K, find_needle_heads)
 
 #------------------------VARIABLES---------------------------
 page_number = 6
@@ -14,12 +14,7 @@ num_layers = None # write None if you want all layers
 num_heads = None # write None if you want all heads
 
 #------------------------EVALUATION--------------------------
-def head_level_eval(path, num_tokens, file_num):
-    # load model only once 
-    model,tokenizer = load_model()
-
-    # Choose the document containing the needle
-    path = path #f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page_number}.txt'
+def head_level_eval(path, num_tokens, file_num, model, tokenizer):
 
     # Create the chat messages
     messages, prompt, needle = get_messages(path, num_tokens=num_tokens)
@@ -91,8 +86,10 @@ def head_level_eval(path, num_tokens, file_num):
     plt.savefig(f"reports/figures/eval_{num_tokens}tokens_page_{file_num}.png", dpi=150)
     plt.close()
 
-base_path = "document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_"
+# load model only once 
+model, tokenizer = load_model()
+base_path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_"
 
 for i in range(25):
-    file_path = f"{base_path}{i+1}.tex"
-    head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1)
+    file_path = f"{base_path}{i+1}.txt"
+    head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1, model=model, tokenizer=tokenizer)
