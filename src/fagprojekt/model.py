@@ -5,6 +5,7 @@ from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import re
 
 
 MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
@@ -58,8 +59,8 @@ def get_messages(path, num_tokens):
     text = tokenizer.decode(last_token_ids, skip_special_tokens=True)
 
     # Get the needle
-    needle_num = int(path[-5])
-  
+    needle_num = int(re.search(r"page_(\d+)", path).group(1))
+
     needle_path=Path('/'.join((path.split('/')[:-2]))+'/needles.csv')
     with open(needle_path) as file:
         needle=file.read().splitlines()[needle_num-1]

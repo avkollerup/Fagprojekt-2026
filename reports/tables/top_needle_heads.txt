@@ -153,3 +153,37 @@ True attention on needle: 0.1651
 Approx attention on needle: 0.1757
 Output cosine similarity: 0.9791
 
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 7 | needle_attn=0.434934 | max_attn=0.366657 | mean_attn=0.003205
+layer=27, head= 1 | needle_attn=0.189923 | max_attn=0.080272 | mean_attn=0.003205
+layer=22, head= 3 | needle_attn=0.162794 | max_attn=0.337323 | mean_attn=0.003205
+layer= 8, head= 6 | needle_attn=0.158162 | max_attn=0.115464 | mean_attn=0.003205
+layer= 3, head= 3 | needle_attn=0.146474 | max_attn=0.183397 | mean_attn=0.003205
+layer=22, head= 6 | needle_attn=0.103846 | max_attn=0.140587 | mean_attn=0.003205
+layer= 7, head= 2 | needle_attn=0.102893 | max_attn=0.323746 | mean_attn=0.003205
+layer=22, head= 5 | needle_attn=0.099189 | max_attn=0.108800 | mean_attn=0.003205
+layer=25, head= 1 | needle_attn=0.096820 | max_attn=0.050831 | mean_attn=0.003205
+layer= 5, head= 2 | needle_attn=0.095780 | max_attn=0.151065 | mean_attn=0.003205
+
+---TRUE/APPROX NEEDLE ATTENTIONS AND COSINE SIMILARITY---
+True attention on needle: 0.4349
+Approx attention on needle: 0.3915
+Output cosine similarity: 0.9986
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 7 | needle_attn=0.434934 | max_attn=0.366657 | mean_attn=0.003205
+layer=27, head= 1 | needle_attn=0.189923 | max_attn=0.080272 | mean_attn=0.003205
+layer=22, head= 3 | needle_attn=0.162794 | max_attn=0.337323 | mean_attn=0.003205
+layer= 8, head= 6 | needle_attn=0.158162 | max_attn=0.115464 | mean_attn=0.003205
+layer= 3, head= 3 | needle_attn=0.146474 | max_attn=0.183397 | mean_attn=0.003205
+layer=22, head= 6 | needle_attn=0.103846 | max_attn=0.140587 | mean_attn=0.003205
+layer= 7, head= 2 | needle_attn=0.102893 | max_attn=0.323746 | mean_attn=0.003205
+layer=22, head= 5 | needle_attn=0.099189 | max_attn=0.108800 | mean_attn=0.003205
+layer=25, head= 1 | needle_attn=0.096820 | max_attn=0.050831 | mean_attn=0.003205
+layer= 5, head= 2 | needle_attn=0.095780 | max_attn=0.151065 | mean_attn=0.003205
+
+---TRUE/APPROX NEEDLE ATTENTIONS AND COSINE SIMILARITY---
+True attention on needle: 0.4349
+Approx attention on needle: 0.3915
+Output cosine similarity: 0.9986
+
