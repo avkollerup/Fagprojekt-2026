@@ -14,7 +14,7 @@ num_top_heads = 10
 num_layers = None # write None if you want all layers
 num_heads = None # write None if you want all heads
 
-k =  50
+k =  66
 method_func = "method_1"
 
 #------------------------EVALUATION--------------------------
