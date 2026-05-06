@@ -105,7 +105,7 @@ def pca_analysis(num_tokens,layer_idx):
                 method_1_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_1)**2).item())
                 method_2_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_2)**2).item())
                 method_3_dict[head][page].append(torch.mean((true_attn_values - attn_values_method_3)**2).item())
-    
+
     # average across pages and plot once per head
     heads = sorted(method_1_dict.keys())
     num_heads = len(heads)
@@ -212,6 +212,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
 
