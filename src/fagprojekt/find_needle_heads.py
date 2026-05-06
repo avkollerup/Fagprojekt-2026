@@ -42,19 +42,23 @@ def find_best_average_needle_head(txt_path):
             "values": values,                                  # raw values (optional debug)
         })
 
-    # Sort heads by highest average needle attention
-    averages.sort(key=lambda x: x["avg_needle_attention"], reverse=True)
+    # Sort primarily by how often the head appears,
+    # and secondarily by average attention
+    averages.sort(
+        key=lambda x: (x["num_occurrences"], x["avg_needle_attention"]),
+        reverse=True
+    )
 
     # Best head = highest average attention
     best = averages[0]
 
-    print("--- BEST AVERAGE NEEDLE HEAD ---")
+    print("--- MOST CONSISTENT NEEDLE HEAD ---")
     print(
         f"layer={best['layer']}, head={best['head']} | "
         f"avg_needle_attn={best['avg_needle_attention']:.6f} | "
         f"seen={best['num_occurrences']} times")
 
-    print("\n--- TOP AVERAGE NEEDLE HEADS ---")
+    print("\n--- TOP CONSISTENT NEEDLE HEADS ---")
     # Print top 10 heads by average attention
     for r in averages[:10]:
         print(
@@ -66,6 +70,6 @@ def find_best_average_needle_head(txt_path):
 
 
 # Run on your log file
-best, averages = find_best_average_needle_head("logs/head_level_eval_1.out")
+best, averages = find_best_average_needle_head("logs/head_level_eval_100tokens.out")
 
 #found: layer=22, head= 3 | avg_needle_attn=0.280908 | seen=7 times
