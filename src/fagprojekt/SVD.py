@@ -1,5 +1,6 @@
 from fagprojekt.model import get_kvq, get_messages, get_true_attention_values
 import torch
+import os
 
 def do_SVD(matrix):
     """Compute singular value decomposition
@@ -107,11 +108,16 @@ def compare_attention(true_attn, approx_attn, name):
 
 if __name__ == "__main__":
     # --------------- PARAMETERS --------------
-    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    k = 100
-    num_tokens = 100
-    layer_idx = 0
-    head_idx = 0
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+    path = os.environ["PATH"]
+    num_tokens = int(os.environ["NUM_TOKENS"])
+    layer_idx = int(os.environ["LAYER_IDX"])
+    head_idx = int(os.environ["HEAD_IDX"])
+    k =  int(os.environ["k"])
 
     # ---------------- Do the 3 SVD methods ----------------
     messages, prompt, needle = get_messages(path, num_tokens=num_tokens)

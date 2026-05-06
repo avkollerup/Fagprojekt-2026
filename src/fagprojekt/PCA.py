@@ -6,6 +6,8 @@ from fagprojekt.model import load_model, get_kvq, get_messages, get_true_attenti
 
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import os
+
 
 def cumulative_explained_variance_for_components(matrix: torch.Tensor, components_list: list[int]) -> list[float]:
     singular_values = torch.linalg.svdvals(matrix.float())
@@ -55,7 +57,7 @@ def pca_analysis(num_tokens,layer_idx):
     components_list = list(map(int, np.linspace(10, 200, 10)))
 
     # iterate over pages
-    pages = range(1, 5)
+    pages = range(1, 11)
     for page in pages:
         path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
         messages, _, _ = get_messages(path, num_tokens=num_tokens)
@@ -208,8 +210,12 @@ def pca_analysis(num_tokens,layer_idx):
             
 if __name__ == "__main__":
     # --------------- PARAMETERS --------------
-    num_tokens = 300
-    layer_idx = 0
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+    num_tokens = int(os.environ["NUM_TOKENS"])
+    layer_idx = int(os.environ["LAYER_IDX"])
 
     # --------------- PCA analysis ---------------
     pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx)

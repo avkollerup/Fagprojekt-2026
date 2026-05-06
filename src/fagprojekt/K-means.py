@@ -2,6 +2,7 @@ from sklearn.cluster import KMeans
 import torch
 from fagprojekt.model import get_messages, get_kvq, get_true_attention_values
 from fagprojekt.SVD import compare_attention
+import os
 
 
 def k_means_clustering(key_head, value_head, query_head, clusters=8):
@@ -36,10 +37,10 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
 
 if __name__ == "__main__":
     # --------------- PARAMETERS --------------
-    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    num_tokens = 100
-    layer_idx = 0
-    head_idx = 0
+    path = os.environ["PATH"]
+    num_tokens = int(os.environ["NUM_TOKENS"])
+    layer_idx = int(os.environ["LAYER_IDX"])
+    head_idx = int(os.environ["HEAD_IDX"])
     clusters = 8
 
     # --------------- K-means ---------------
