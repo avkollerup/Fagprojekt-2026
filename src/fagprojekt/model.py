@@ -227,7 +227,7 @@ def get_kvq(messages, layer_idx, head_idx, want_print=False, model=None, tokeniz
     return key_head, value_head, query_head
 
 def get_true_attention_values(query_head, key_head, value_head):
-    # A = softmax(M + QK^T / sqrt(d))
+    # softmax(M + QK^T / sqrt(d))
     d = key_head.shape[-1]
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
     attn_values = torch.softmax(M + (query_head @ key_head.T) / math.sqrt(d), dim=-1) @ value_head

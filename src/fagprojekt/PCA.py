@@ -95,9 +95,9 @@ def pca_analysis(num_tokens,layer_idx):
 
             for num_components in components_list:
                 # Get attention values
-                attn_values_method_1 = method_1(key_head, query_head, value_head, k=num_components)
-                attn_values_method_2 = method_2(key_head, query_head, value_head, k=num_components)
-                attn_values_method_3 = method_3(key_head, query_head, value_head, k=num_components)
+                _, attn_values_method_1 = method_1(key_head, query_head, value_head, k=num_components)
+                _, _, attn_values_method_2 = method_2(key_head, query_head, value_head, k=num_components)
+                _, _, attn_values_method_3 = method_3(key_head, query_head, value_head, k=num_components)
 
                 true_attn_values = get_true_attention_values(query_head, key_head, value_head)
 
@@ -212,7 +212,6 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
 

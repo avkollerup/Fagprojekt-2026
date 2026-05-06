@@ -36,8 +36,11 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
     return attn_values
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+
     # --------------- PARAMETERS --------------
-    path = os.environ["PATH"]
+    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])

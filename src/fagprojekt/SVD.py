@@ -28,7 +28,7 @@ def method_1(key_head, query_head, value_head, k):
 
     # Compute attention values
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ value_head
-    return attn_values
+    return K, attn_values
 
 def decompose_K(key_head, k):
     U_K, s_K, Vt_K = do_SVD(key_head)
@@ -41,7 +41,6 @@ def decompose_K(key_head, k):
     B = Vt_K[:k_eff, :].T
     
     return A, B
-
 
 def method_2(key_head, query_head, value_head, k):
     """Method 2: Decomposition of the key and value matrix seperately"""
@@ -58,7 +57,7 @@ def method_2(key_head, query_head, value_head, k):
 
     # Compute attention values
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
-    return attn_values
+    return K, V, attn_values
 
 def method_3(key_head, query_head, value_head, k):
     """Method 3: Jointly decompose key and value matrix"""
@@ -88,7 +87,7 @@ def method_3(key_head, query_head, value_head, k):
 
     # Compute attention values
     attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
-    return attn_values
+    return K, V, attn_values
 
 def compare_attention(true_attn, approx_attn, name, want_print=True):
     """ We have used three metrics: 
@@ -115,7 +114,7 @@ if __name__ == "__main__":
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
-    path = os.environ["PATH"]
+    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])
@@ -126,9 +125,9 @@ if __name__ == "__main__":
 
     key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
 
-    attn_values_method_1 = method_1(key_head, query_head, value_head, k=k)
-    attn_values_method_2 = method_2(key_head, query_head, value_head, k=k)
-    attn_values_method_3 = method_3(key_head, query_head, value_head, k=k)
+    _, attn_values_method_1 = method_1(key_head, query_head, value_head, k=k)
+    _, _, attn_values_method_2 = method_2(key_head, query_head, value_head, k=k)
+    _, _, attn_values_method_3 = method_3(key_head, query_head, value_head, k=k)
 
     print("Attention values dimension for the 3 SVD methods:", attn_values_method_1.size(),attn_values_method_2.size(),attn_values_method_3.size())
 
