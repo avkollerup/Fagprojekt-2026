@@ -6,16 +6,18 @@ import math
 from tqdm import tqdm
 
 def find_token_positions(tokenizer, messages, needle):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     # take messages (system + user + assistant format) and converts it into the exact token sequence the model sees
-    encoded = tokenizer.apply_chat_template(
+    inputs = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
         tokenize=True,
         return_tensors="pt",
-        return_dict=True,)
+        return_dict=True,).to(device)
 
     # extract the full token sequence as a list
-    input_ids = encoded["input_ids"][0].tolist()
+    input_ids = inputs["input_ids"][0].tolist()
 
     # tokenize just the needle string
     needle_ids = tokenizer(needle, add_special_tokens=False)["input_ids"]
@@ -32,15 +34,16 @@ def find_token_positions(tokenizer, messages, needle):
 # Computes both attention weights and final attention output
 def get_attention_output(query_head, key_head, value_head):
     # Define dimensions
-    d = key_head.shape[-1]
-    T = query_head.shape[0]
+    # d = key_head.shape[-1]
 
     # Create mask to prevent attending to future tokens
-    mask = torch.triu(torch.ones(T, T, device=query_head.device), diagonal=1)
-    M = mask.masked_fill(mask == 1, float("-inf"))
+    M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
     # Compute attention weights A = softmax(M + QK^T / sqrt(d))
-    A = torch.softmax(M + (query_head @ key_head.T) / math.sqrt(d), dim=-1)
+    # A = torch.softmax(M + (query_head @ key_head.T) / math.sqrt(d), dim=-1)
+
+    # A = softmax(M + QK^T)
+    A = torch.softmax((M + (query_head @ key_head.T)), dim=-1)
 
     # Compute attention output O = A @ V
     O = A @ value_head
@@ -116,14 +119,8 @@ def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=N
     for idx in tqdm(range(total_iters), desc="Scanning heads"):
         layer_idx = idx // n_heads
         head_idx = idx % n_heads
-
-        key_head, value_head, query_head = get_kvq(
-            messages,
-            layer_idx=layer_idx,
-            head_idx=head_idx,
-            want_print=False,
-            model=model,
-            tokenizer=tokenizer,)
+        
+        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
         A, O = get_attention_output(query_head, key_head, value_head)
 
