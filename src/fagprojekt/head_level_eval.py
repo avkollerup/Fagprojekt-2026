@@ -4,17 +4,22 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import matplotlib.pyplot as plt
 
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
-from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, method_1_K, find_needle_heads)
+from fagprojekt.SVD import (method_1, method_2, method_3)
+from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, find_needle_heads)
 
 #------------------------VARIABLES---------------------------
 page_number = 6
-num_tokens = 300
+num_tokens = int(os.environ["NUM_TOKENS"])
 num_top_heads = 10
 num_layers = None # write None if you want all layers
 num_heads = None # write None if you want all heads
 
+k =  int(os.environ["k"])
+method_func = "method_1"
+
+
 #------------------------EVALUATION--------------------------
-def head_level_eval(path, num_tokens, file_num, model, tokenizer):
+def head_level_eval(path, num_tokens, file_num, model, tokenizer, method_func):
 
     # Create the chat messages
     messages, _, needle = get_messages(path, num_tokens=num_tokens)
@@ -47,11 +52,18 @@ def head_level_eval(path, num_tokens, file_num, model, tokenizer):
     # Extract K, V, and Q
     key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
-    # Approximate the key matrix using SVD method 1
-    key_approx = method_1_K(key_head)
+    if method_func == "method_1":
+        # Approximate the key matrix using SVD method 1
+        key_approx, _ = method_1(key_head, query_head, value_head, k)
+        # Keep V unchanged for this first test, so we only test the effect of approximating K
+        value_approx = value_head
 
-    # Keep V unchanged for this first test, so we only test the effect of approximating K
-    value_approx = value_head
+    if method_func == "method_2":
+        # Approximate the key and value matrix using SVD method 2
+        key_approx, value_approx, _ = method_2(key_head, query_head, value_head, k)
+
+    if method_func == "method_3":
+        key_approx, value_approx, _ = method_3(key_head, query_head, value_head, k)
 
     # Compare true attention/output with approximated attention/output
     A_true, A_approx, O_true, O_approx, true_needle_attention, approx_needle_attention, cos_sim  = evaluate_head(
