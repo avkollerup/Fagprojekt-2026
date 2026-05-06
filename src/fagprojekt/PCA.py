@@ -65,7 +65,6 @@ def pca_analysis(num_tokens,layer_idx):
         # perform for each head
         heads = range(0,5)
         for head in heads:
-            print(f"Page {page}, head {head}")
             # Get K, V, Q 
             key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head, want_print=False, model=model, tokenizer=tokenizer)
 
