@@ -1,5 +1,5 @@
 from fagprojekt.SVD import do_SVD
-from fagprojekt.model import (get_kvq)
+from fagprojekt.model import (get_kvq,get_true_attention_values)
 import torch
 import torch.nn.functional as F
 import math
@@ -34,16 +34,13 @@ def find_token_positions(tokenizer, messages, needle):
 # Computes both attention weights and final attention output
 def get_attention_output(query_head, key_head, value_head):
     # Define dimensions
-    # d = key_head.shape[-1]
+    d = key_head.shape[-1]
 
     # Create mask to prevent attending to future tokens
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
 
     # Compute attention weights A = softmax(M + QK^T / sqrt(d))
-    # A = torch.softmax(M + (query_head @ key_head.T) / math.sqrt(d), dim=-1)
-
-    # A = softmax(M + QK^T)
-    A = torch.softmax((M + (query_head @ key_head.T)), dim=-1)
+    A = torch.softmax(M + (query_head @ key_head.T) / math.sqrt(d), dim=-1)
 
     # Compute attention output O = A @ V
     O = A @ value_head
@@ -86,7 +83,6 @@ def evaluate_head(query_head, key_true, value_true, key_approx, value_approx, ne
     print("Approx attention on needle:", approx_needle_attention.item())
     print("Output cosine similarity:", cosine.item())
 
-
     return A_true, A_approx, O_true, O_approx, true_needle_attention.item(),  approx_needle_attention.item(), cosine.item()
 
 
@@ -119,10 +115,10 @@ def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=N
     for idx in tqdm(range(total_iters), desc="Scanning heads"):
         layer_idx = idx // n_heads
         head_idx = idx % n_heads
-        
+
         key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
-        A, O = get_attention_output(query_head, key_head, value_head)
+        A = get_true_attention_values(key_head, query_head, value_head)
 
         q_idx = -1
 
