@@ -2,24 +2,20 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import matplotlib.pyplot as plt
-from dotenv import load_dotenv
 
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
 from fagprojekt.SVD import (method_1, method_2, method_3)
 from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, find_needle_heads)
 
 #------------------------VARIABLES---------------------------
-load_dotenv()
-
 page_number = 6
-num_tokens = int(os.environ["NUM_TOKENS"])
+num_tokens = 300
 num_top_heads = 10
 num_layers = None # write None if you want all layers
 num_heads = None # write None if you want all heads
 
-k =  int(os.environ["k"])
+k =  66
 method_func = "method_1"
-
 
 #------------------------EVALUATION--------------------------
 def head_level_eval(path, num_tokens, file_num, model, tokenizer, method_func):
