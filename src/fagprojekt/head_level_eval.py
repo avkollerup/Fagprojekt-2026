@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
 from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, method_1_K, find_needle_heads)
 
+#------------------------VARIABLES---------------------------
+page_number = 6
+num_tokens = 300
+num_top_heads = 10
+num_layers = None # write None if you want all layers
+num_heads = None # write None if you want all heads
 
 #------------------------EVALUATION--------------------------
 def head_level_eval(path, num_tokens, file_num, model, tokenizer):
@@ -73,20 +79,10 @@ def head_level_eval(path, num_tokens, file_num, model, tokenizer):
     plt.savefig(f"reports/figures/eval_{num_tokens}tokens_page_{file_num}.png", dpi=150)
     plt.close()
 
+# load model only once 
+model, tokenizer = load_model()
+base_path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_"
 
-if __name__ == "__main__":
-#------------------------VARIABLES---------------------------
-    page_number = 6
-    num_tokens = 300
-    num_top_heads = 10
-    num_layers = None # write None if you want all layers
-    num_heads = None # write None if you want all heads
-
-
-    # load model only once 
-    model, tokenizer = load_model()
-    base_path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_"
-
-    for i in range(25):
-        file_path = f"{base_path}{i+1}.txt"
-        head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1, model=model, tokenizer=tokenizer)
+for i in range(25):
+    file_path = f"{base_path}{i+1}.txt"
+    head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1, model=model, tokenizer=tokenizer)
