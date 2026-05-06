@@ -86,18 +86,6 @@ def evaluate_head(query_head, key_true, value_true, key_approx, value_approx, ne
     return A_true, A_approx, O_true, O_approx, true_needle_attention.item(),  approx_needle_attention.item(), cosine.item()
 
 
-
-def method_1_K(key_head, k=50):
-    """Method 1: Decomposition of the key matrix only"""
-    U_K, s_K, Vt_K = do_SVD(key_head)
-
-    k_eff = min(k, s_K.shape[0])
-    K = U_K[:, :k_eff] @ torch.diag(s_K[:k_eff]) @ Vt_K[:k_eff, :]
-
-    return K
-
-
-
 def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=None, num_heads=None):
     needle_positions = find_token_positions(tokenizer, messages, needle)
 
