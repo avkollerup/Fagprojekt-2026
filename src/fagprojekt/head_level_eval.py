@@ -2,12 +2,15 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
 
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
 from fagprojekt.SVD import (method_1, method_2, method_3)
 from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, find_needle_heads)
 
 #------------------------VARIABLES---------------------------
+load_dotenv()
+
 page_number = 6
 num_tokens = int(os.environ["NUM_TOKENS"])
 num_top_heads = 10
