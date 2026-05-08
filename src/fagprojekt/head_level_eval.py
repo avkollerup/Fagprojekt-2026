@@ -96,4 +96,4 @@ base_path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_Text
 
 for i in range(25):
     file_path = f"{base_path}{i+1}.txt"
-    head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1, model=model, tokenizer=tokenizer)
+    head_level_eval(path=file_path, num_tokens=num_tokens, file_num=i+1, model=model, tokenizer=tokenizer, method_func="method_1")
