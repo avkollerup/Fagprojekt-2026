@@ -70,9 +70,25 @@ def find_best_average_needle_head(txt_path):
 
 
 # Run on your log file
-best, averages = find_best_average_needle_head("logs/head_level_eval_200tokens_random.out")
+best, averages = find_best_average_needle_head("logs/head_level_eval_300tokens_random.out")
 
+"""With old eval function where the needle was always at the end"""
 #found: layer=22, head= 3 | avg_needle_attn=0.280908 | seen=7 times
+
+
+"""New eval function where the needle is a random place in the message"""
+"""head_level_eval_100tokens_random"""
+# --- TOP CONSISTENT NEEDLE HEADS ---
+# layer= 5, head= 1 | avg_needle_attn=0.312884 | seen=23 times
+# layer= 8, head= 0 | avg_needle_attn=0.235665 | seen=22 times
+# layer= 9, head= 2 | avg_needle_attn=0.199062 | seen=17 times
+# layer=12, head= 6 | avg_needle_attn=0.160841 | seen=16 times
+# layer= 8, head= 7 | avg_needle_attn=0.186470 | seen=14 times
+# layer= 8, head= 2 | avg_needle_attn=0.202978 | seen=13 times
+# layer=14, head= 0 | avg_needle_attn=0.152594 | seen=11 times
+# layer= 7, head= 7 | avg_needle_attn=0.148426 | seen=9 times
+# layer=13, head= 4 | avg_needle_attn=0.176902 | seen=8 times
+# layer=10, head= 6 | avg_needle_attn=0.170130 | seen=8 times
 
 """head_level_eval_200tokens_random"""
 # --- TOP CONSISTENT NEEDLE HEADS ---
@@ -86,3 +102,16 @@ best, averages = find_best_average_needle_head("logs/head_level_eval_200tokens_r
 # layer= 9, head= 0 | avg_needle_attn=0.117675 | seen=9 times
 # layer=28, head= 0 | avg_needle_attn=0.132862 | seen=8 times
 # layer=25, head= 0 | avg_needle_attn=0.124907 | seen=8 times
+
+"""head_level_eval_300tokens_random"""
+# --- TOP CONSISTENT NEEDLE HEADS ---
+# layer= 5, head= 1 | avg_needle_attn=0.256797 | seen=25 times
+# layer=11, head= 0 | avg_needle_attn=0.285489 | seen=23 times
+# layer= 8, head= 0 | avg_needle_attn=0.177909 | seen=22 times
+# layer= 3, head= 0 | avg_needle_attn=0.134813 | seen=18 times
+# layer=14, head= 0 | avg_needle_attn=0.173479 | seen=16 times
+# layer= 4, head= 0 | avg_needle_attn=0.123281 | seen=16 times
+# layer=28, head= 0 | avg_needle_attn=0.131109 | seen=15 times
+# layer=25, head= 0 | avg_needle_attn=0.139427 | seen=13 times
+# layer= 8, head= 2 | avg_needle_attn=0.166886 | seen=7 times
+# layer= 9, head= 7 | avg_needle_attn=0.094289 | seen=7 times

@@ -1,0 +1,534 @@
+-------------- MODEL DEVICE --------------
+NVIDIA A100-PCIE-40GB
+cuda:0
+Needle: The secret currency is a "euro".
+Needle positions: [135, 136, 137, 138, 139, 140, 141, 142, 143]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.350815 | max_attn=0.219451 | mean_attn=0.006329
+layer=25, head= 7 | needle_attn=0.327890 | max_attn=0.120734 | mean_attn=0.006329
+layer=19, head= 3 | needle_attn=0.296538 | max_attn=0.172746 | mean_attn=0.006329
+layer= 9, head= 2 | needle_attn=0.238890 | max_attn=0.144283 | mean_attn=0.006329
+layer=28, head= 1 | needle_attn=0.209050 | max_attn=0.064472 | mean_attn=0.006329
+layer=13, head= 4 | needle_attn=0.207497 | max_attn=0.173365 | mean_attn=0.006329
+layer= 5, head= 1 | needle_attn=0.189727 | max_attn=0.139901 | mean_attn=0.006329
+layer=10, head= 6 | needle_attn=0.178521 | max_attn=0.065606 | mean_attn=0.006329
+layer= 4, head= 1 | needle_attn=0.169116 | max_attn=0.071650 | mean_attn=0.006329
+layer= 6, head= 5 | needle_attn=0.161037 | max_attn=0.075075 | mean_attn=0.006329
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.3508148193359375, 'max_attention': 0.21945105493068695, 'mean_attention': 0.006329113617539406}
+True attention on needle: 0.0030083563178777695
+Approx attention on needle: 0.004127006512135267
+Output cosine similarity: 0.9945059418678284
+Needle: The secret object #3 is a "spoon".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.267844 | max_attn=0.144558 | mean_attn=0.004608
+layer=15, head= 1 | needle_attn=0.254282 | max_attn=0.188436 | mean_attn=0.003937
+layer= 5, head= 1 | needle_attn=0.172557 | max_attn=0.103681 | mean_attn=0.002320
+layer= 9, head= 1 | needle_attn=0.140581 | max_attn=0.037953 | mean_attn=0.004608
+layer=14, head= 0 | needle_attn=0.135524 | max_attn=0.127853 | mean_attn=0.003984
+layer=10, head= 6 | needle_attn=0.121327 | max_attn=0.055214 | mean_attn=0.004608
+layer=24, head= 5 | needle_attn=0.114495 | max_attn=0.054841 | mean_attn=0.004608
+layer=25, head= 6 | needle_attn=0.113078 | max_attn=0.130791 | mean_attn=0.004065
+layer=28, head= 1 | needle_attn=0.110462 | max_attn=0.046524 | mean_attn=0.004608
+layer=25, head= 0 | needle_attn=0.109336 | max_attn=0.104956 | mean_attn=0.003460
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.2678440809249878, 'max_attention': 0.144557923078537, 'mean_attention': 0.004608294926583767}
+True attention on needle: 0.009070424363017082
+Approx attention on needle: 0.017758969217538834
+Output cosine similarity: 0.9376970529556274
+Needle: The secret office supply is a "pencil".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198, 199]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.434114 | max_attn=0.305691 | mean_attn=0.004651
+layer=15, head= 7 | needle_attn=0.314636 | max_attn=0.206660 | mean_attn=0.004651
+layer= 8, head= 0 | needle_attn=0.235205 | max_attn=0.176946 | mean_attn=0.004651
+layer=14, head= 0 | needle_attn=0.205726 | max_attn=0.091457 | mean_attn=0.004695
+layer=30, head= 4 | needle_attn=0.183726 | max_attn=0.141042 | mean_attn=0.004651
+layer= 8, head= 2 | needle_attn=0.157987 | max_attn=0.086709 | mean_attn=0.004651
+layer= 4, head= 1 | needle_attn=0.154624 | max_attn=0.035565 | mean_attn=0.004651
+layer= 8, head= 7 | needle_attn=0.143934 | max_attn=0.079593 | mean_attn=0.004651
+layer= 3, head= 0 | needle_attn=0.135089 | max_attn=0.052090 | mean_attn=0.004651
+layer= 7, head= 7 | needle_attn=0.134834 | max_attn=0.059269 | mean_attn=0.004651
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.43411368131637573, 'max_attention': 0.3056907653808594, 'mean_attention': 0.004651162773370743}
+True attention on needle: 0.19691088795661926
+Approx attention on needle: 0.17559602856636047
+Output cosine similarity: 0.9930118918418884
+Needle: The secret sport is "basketball".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 7 | needle_attn=0.214513 | max_attn=0.042638 | mean_attn=0.004717
+layer= 9, head= 2 | needle_attn=0.202298 | max_attn=0.091059 | mean_attn=0.004717
+layer= 8, head= 0 | needle_attn=0.136056 | max_attn=0.098280 | mean_attn=0.004717
+layer=12, head= 6 | needle_attn=0.127195 | max_attn=0.070256 | mean_attn=0.004717
+layer= 7, head= 3 | needle_attn=0.125690 | max_attn=0.122491 | mean_attn=0.004717
+layer= 4, head= 1 | needle_attn=0.112734 | max_attn=0.075288 | mean_attn=0.004717
+layer= 9, head= 7 | needle_attn=0.100448 | max_attn=0.048707 | mean_attn=0.004717
+layer= 5, head= 1 | needle_attn=0.082552 | max_attn=0.133656 | mean_attn=0.004717
+layer= 7, head= 7 | needle_attn=0.081198 | max_attn=0.060240 | mean_attn=0.004717
+layer=10, head= 3 | needle_attn=0.074037 | max_attn=0.057743 | mean_attn=0.004717
+Best needle head:
+{'layer': 8, 'head': 7, 'needle_attention': 0.21451307833194733, 'max_attention': 0.042637698352336884, 'mean_attention': 0.004716981202363968}
+True attention on needle: 0.12103526294231415
+Approx attention on needle: 0.10562127828598022
+Output cosine similarity: 0.9927803874015808
+Needle: The secret landmark is the "Eiffel Tower".
+Needle positions: [188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer=13, head= 2 | needle_attn=0.450245 | max_attn=0.410217 | mean_attn=0.004651
+layer=11, head= 1 | needle_attn=0.371386 | max_attn=0.290537 | mean_attn=0.004651
+layer= 8, head= 7 | needle_attn=0.315531 | max_attn=0.069044 | mean_attn=0.004651
+layer= 4, head= 1 | needle_attn=0.224850 | max_attn=0.064553 | mean_attn=0.004673
+layer= 8, head= 2 | needle_attn=0.175078 | max_attn=0.054510 | mean_attn=0.004651
+layer=28, head= 1 | needle_attn=0.173214 | max_attn=0.046503 | mean_attn=0.004651
+layer= 8, head= 0 | needle_attn=0.172319 | max_attn=0.109706 | mean_attn=0.004651
+layer=25, head= 0 | needle_attn=0.170838 | max_attn=0.232084 | mean_attn=0.004651
+layer=25, head= 6 | needle_attn=0.162421 | max_attn=0.060383 | mean_attn=0.004651
+layer=14, head= 0 | needle_attn=0.148745 | max_attn=0.107784 | mean_attn=0.004651
+Best needle head:
+{'layer': 13, 'head': 2, 'needle_attention': 0.45024538040161133, 'max_attention': 0.41021689772605896, 'mean_attention': 0.004651162773370743}
+True attention on needle: 0.008944649249315262
+Approx attention on needle: 0.011540766805410385
+Output cosine similarity: 0.9965196251869202
+Needle: The secret flower is a "rose".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.363351 | max_attn=0.148754 | mean_attn=0.004717
+layer= 8, head= 0 | needle_attn=0.316438 | max_attn=0.151392 | mean_attn=0.004717
+layer= 7, head= 7 | needle_attn=0.237166 | max_attn=0.106948 | mean_attn=0.004717
+layer= 8, head= 7 | needle_attn=0.164670 | max_attn=0.057440 | mean_attn=0.004717
+layer=27, head= 4 | needle_attn=0.163560 | max_attn=0.068626 | mean_attn=0.004717
+layer=27, head= 1 | needle_attn=0.147985 | max_attn=0.043211 | mean_attn=0.004717
+layer= 3, head= 0 | needle_attn=0.142509 | max_attn=0.070328 | mean_attn=0.004717
+layer=14, head= 5 | needle_attn=0.121582 | max_attn=0.079786 | mean_attn=0.004717
+layer=24, head= 6 | needle_attn=0.120262 | max_attn=0.026846 | mean_attn=0.004717
+layer=12, head= 6 | needle_attn=0.112826 | max_attn=0.050753 | mean_attn=0.004717
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.36335065960884094, 'max_attention': 0.14875353872776031, 'mean_attention': 0.004716980736702681}
+True attention on needle: 0.13593034446239471
+Approx attention on needle: 0.11930258572101593
+Output cosine similarity: 0.9967703819274902
+Needle: The secret object #5 is a "comb".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.236671 | max_attn=0.144151 | mean_attn=0.004630
+layer=15, head= 3 | needle_attn=0.213063 | max_attn=0.187627 | mean_attn=0.004630
+layer= 8, head= 0 | needle_attn=0.212529 | max_attn=0.178058 | mean_attn=0.004630
+layer=10, head= 6 | needle_attn=0.210434 | max_attn=0.082993 | mean_attn=0.004630
+layer= 8, head= 2 | needle_attn=0.193956 | max_attn=0.060596 | mean_attn=0.004630
+layer=12, head= 6 | needle_attn=0.168289 | max_attn=0.060154 | mean_attn=0.004149
+layer=13, head= 4 | needle_attn=0.165304 | max_attn=0.121757 | mean_attn=0.004630
+layer=25, head= 7 | needle_attn=0.161202 | max_attn=0.074343 | mean_attn=0.004630
+layer=15, head= 1 | needle_attn=0.150630 | max_attn=0.269843 | mean_attn=0.004630
+layer=14, head= 0 | needle_attn=0.137163 | max_attn=0.091046 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.23667077720165253, 'max_attention': 0.1441507190465927, 'mean_attention': 0.004629629664123058}
+True attention on needle: 0.16076087951660156
+Approx attention on needle: 0.12970802187919617
+Output cosine similarity: 0.9924175143241882
+Needle: The secret shape is a "circle".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.249639 | max_attn=0.111300 | mean_attn=0.004717
+layer=12, head= 6 | needle_attn=0.187975 | max_attn=0.091996 | mean_attn=0.004717
+layer=11, head= 0 | needle_attn=0.168695 | max_attn=0.098905 | mean_attn=0.004717
+layer= 5, head= 1 | needle_attn=0.148775 | max_attn=0.107724 | mean_attn=0.004717
+layer=27, head= 4 | needle_attn=0.136323 | max_attn=0.065224 | mean_attn=0.004717
+layer=14, head= 0 | needle_attn=0.122750 | max_attn=0.101430 | mean_attn=0.004717
+layer= 8, head= 7 | needle_attn=0.116032 | max_attn=0.073638 | mean_attn=0.004717
+layer= 9, head= 1 | needle_attn=0.115349 | max_attn=0.043436 | mean_attn=0.004717
+layer= 3, head= 0 | needle_attn=0.112557 | max_attn=0.063994 | mean_attn=0.004717
+layer=15, head= 3 | needle_attn=0.106787 | max_attn=0.309690 | mean_attn=0.004717
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.24963852763175964, 'max_attention': 0.11130030453205109, 'mean_attention': 0.004716980736702681}
+True attention on needle: 0.002198976231738925
+Approx attention on needle: 0.0033430696930736303
+Output cosine similarity: 0.9880186915397644
+Needle: The secret drink is "coffee".
+Needle positions: [191, 192, 193, 194, 195, 196, 197]
+
+--- TOP NEEDLE HEADS ---
+layer= 9, head= 2 | needle_attn=0.132562 | max_attn=0.088576 | mean_attn=0.004762
+layer= 7, head= 7 | needle_attn=0.132137 | max_attn=0.066936 | mean_attn=0.004762
+layer= 8, head= 0 | needle_attn=0.129429 | max_attn=0.109796 | mean_attn=0.004762
+layer=12, head= 6 | needle_attn=0.120098 | max_attn=0.058245 | mean_attn=0.004762
+layer=11, head= 0 | needle_attn=0.117713 | max_attn=0.076880 | mean_attn=0.004762
+layer=15, head= 7 | needle_attn=0.105339 | max_attn=0.061229 | mean_attn=0.004762
+layer= 7, head= 6 | needle_attn=0.104676 | max_attn=0.062803 | mean_attn=0.004762
+layer= 5, head= 1 | needle_attn=0.102757 | max_attn=0.167123 | mean_attn=0.004762
+layer= 8, head= 7 | needle_attn=0.098814 | max_attn=0.071670 | mean_attn=0.004762
+layer=10, head= 3 | needle_attn=0.096281 | max_attn=0.063949 | mean_attn=0.004762
+Best needle head:
+{'layer': 9, 'head': 2, 'needle_attention': 0.1325618028640747, 'max_attention': 0.08857643604278564, 'mean_attention': 0.004761904943734407}
+True attention on needle: 0.0503849983215332
+Approx attention on needle: 0.049589741975069046
+Output cosine similarity: 0.9978697896003723
+Needle: The secret fruit is an "apple".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.445322 | max_attn=0.257139 | mean_attn=0.004717
+layer= 9, head= 2 | needle_attn=0.200308 | max_attn=0.100639 | mean_attn=0.004717
+layer=19, head= 3 | needle_attn=0.184444 | max_attn=0.086790 | mean_attn=0.004717
+layer=12, head= 6 | needle_attn=0.176351 | max_attn=0.089173 | mean_attn=0.004717
+layer=27, head= 4 | needle_attn=0.160235 | max_attn=0.104463 | mean_attn=0.004717
+layer= 8, head= 7 | needle_attn=0.153377 | max_attn=0.049163 | mean_attn=0.004717
+layer=10, head= 6 | needle_attn=0.150115 | max_attn=0.114588 | mean_attn=0.004717
+layer= 5, head= 1 | needle_attn=0.148727 | max_attn=0.105336 | mean_attn=0.004717
+layer= 3, head= 0 | needle_attn=0.133943 | max_attn=0.060102 | mean_attn=0.004717
+layer= 7, head= 7 | needle_attn=0.126506 | max_attn=0.062813 | mean_attn=0.004717
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.4453223943710327, 'max_attention': 0.25713852047920227, 'mean_attention': 0.004716981202363968}
+True attention on needle: 0.0013101319782435894
+Approx attention on needle: 0.0022630002349615097
+Output cosine similarity: 0.9953769445419312
+Needle: The secret object #1 is a "book".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.463396 | max_attn=0.344399 | mean_attn=0.004630
+layer=12, head= 6 | needle_attn=0.215217 | max_attn=0.088482 | mean_attn=0.004651
+layer=14, head= 0 | needle_attn=0.213739 | max_attn=0.064974 | mean_attn=0.004651
+layer=26, head= 0 | needle_attn=0.195974 | max_attn=0.265866 | mean_attn=0.004630
+layer= 9, head= 6 | needle_attn=0.188006 | max_attn=0.102242 | mean_attn=0.004630
+layer= 8, head= 7 | needle_attn=0.183843 | max_attn=0.128837 | mean_attn=0.004651
+layer= 9, head= 7 | needle_attn=0.153034 | max_attn=0.037847 | mean_attn=0.004630
+layer= 9, head= 2 | needle_attn=0.150377 | max_attn=0.066818 | mean_attn=0.004630
+layer=15, head= 3 | needle_attn=0.142535 | max_attn=0.110240 | mean_attn=0.004630
+layer= 9, head= 0 | needle_attn=0.129586 | max_attn=0.043512 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.4633958637714386, 'max_attention': 0.34439945220947266, 'mean_attention': 0.004629629664123058}
+True attention on needle: 0.19776907563209534
+Approx attention on needle: 0.14458049833774567
+Output cosine similarity: 0.9851418137550354
+Needle: The secret animal #3 is a "dolphin".
+Needle positions: [189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.507723 | max_attn=0.138310 | mean_attn=0.004587
+layer= 9, head= 2 | needle_attn=0.239568 | max_attn=0.139514 | mean_attn=0.004587
+layer= 8, head= 2 | needle_attn=0.211837 | max_attn=0.111285 | mean_attn=0.004587
+layer=29, head= 4 | needle_attn=0.197453 | max_attn=0.150286 | mean_attn=0.004587
+layer=25, head= 7 | needle_attn=0.177076 | max_attn=0.100136 | mean_attn=0.004587
+layer= 8, head= 7 | needle_attn=0.172111 | max_attn=0.057747 | mean_attn=0.004587
+layer= 8, head= 0 | needle_attn=0.170398 | max_attn=0.252695 | mean_attn=0.004587
+layer=12, head= 6 | needle_attn=0.161689 | max_attn=0.068032 | mean_attn=0.004587
+layer= 9, head= 7 | needle_attn=0.146225 | max_attn=0.035927 | mean_attn=0.004587
+layer= 9, head= 0 | needle_attn=0.144154 | max_attn=0.066266 | mean_attn=0.004587
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.5077226161956787, 'max_attention': 0.13830983638763428, 'mean_attention': 0.004587155766785145}
+True attention on needle: 0.11800828576087952
+Approx attention on needle: 0.08901119232177734
+Output cosine similarity: 0.9971202611923218
+Needle: The secret kitchen appliance is a "blender".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198, 199]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.268064 | max_attn=0.129666 | mean_attn=0.004651
+layer= 5, head= 1 | needle_attn=0.251588 | max_attn=0.063357 | mean_attn=0.004651
+layer= 8, head= 2 | needle_attn=0.241355 | max_attn=0.066099 | mean_attn=0.004651
+layer=13, head= 2 | needle_attn=0.217012 | max_attn=0.115182 | mean_attn=0.004651
+layer=25, head= 7 | needle_attn=0.183144 | max_attn=0.077425 | mean_attn=0.004651
+layer= 9, head= 2 | needle_attn=0.181061 | max_attn=0.048832 | mean_attn=0.004651
+layer=13, head= 4 | needle_attn=0.179786 | max_attn=0.147183 | mean_attn=0.004651
+layer= 7, head= 7 | needle_attn=0.171909 | max_attn=0.057704 | mean_attn=0.004651
+layer= 9, head= 1 | needle_attn=0.150223 | max_attn=0.065404 | mean_attn=0.004651
+layer=10, head= 6 | needle_attn=0.142615 | max_attn=0.079653 | mean_attn=0.004651
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.2680639624595642, 'max_attention': 0.12966610491275787, 'mean_attention': 0.004651162773370743}
+True attention on needle: 0.0013188011944293976
+Approx attention on needle: 0.002057870849967003
+Output cosine similarity: 0.9844049215316772
+Needle: The secret instrument is a "guitar".
+Needle positions: [189, 190, 191, 192, 193, 194, 195, 196, 197]
+
+--- TOP NEEDLE HEADS ---
+layer=26, head= 3 | needle_attn=0.218462 | max_attn=0.168618 | mean_attn=0.004717
+layer=25, head= 7 | needle_attn=0.211206 | max_attn=0.100166 | mean_attn=0.004717
+layer=10, head= 6 | needle_attn=0.174736 | max_attn=0.108433 | mean_attn=0.004717
+layer= 8, head= 0 | needle_attn=0.173047 | max_attn=0.334049 | mean_attn=0.004762
+layer= 9, head= 2 | needle_attn=0.172899 | max_attn=0.070044 | mean_attn=0.004717
+layer=13, head= 4 | needle_attn=0.139560 | max_attn=0.366538 | mean_attn=0.004717
+layer=27, head= 2 | needle_attn=0.138568 | max_attn=0.081013 | mean_attn=0.004717
+layer=11, head= 0 | needle_attn=0.124676 | max_attn=0.054810 | mean_attn=0.004717
+layer=15, head= 7 | needle_attn=0.123394 | max_attn=0.065578 | mean_attn=0.004762
+layer= 7, head= 3 | needle_attn=0.118448 | max_attn=0.129078 | mean_attn=0.004762
+Best needle head:
+{'layer': 26, 'head': 3, 'needle_attention': 0.21846245229244232, 'max_attention': 0.168618306517601, 'mean_attention': 0.004716981202363968}
+True attention on needle: 0.020458534359931946
+Approx attention on needle: 0.019970297813415527
+Output cosine similarity: 0.9992043375968933
+Needle: The secret object #2 is a "lamp".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.365150 | max_attn=0.193558 | mean_attn=0.004630
+layer= 8, head= 2 | needle_attn=0.216724 | max_attn=0.114993 | mean_attn=0.004630
+layer= 9, head= 7 | needle_attn=0.192324 | max_attn=0.046667 | mean_attn=0.004630
+layer= 8, head= 0 | needle_attn=0.183504 | max_attn=0.176812 | mean_attn=0.004630
+layer= 9, head= 2 | needle_attn=0.180894 | max_attn=0.067993 | mean_attn=0.004630
+layer=14, head= 0 | needle_attn=0.154572 | max_attn=0.112126 | mean_attn=0.004630
+layer=25, head= 7 | needle_attn=0.149258 | max_attn=0.090763 | mean_attn=0.004630
+layer=16, head= 4 | needle_attn=0.147592 | max_attn=0.085140 | mean_attn=0.004630
+layer=25, head= 0 | needle_attn=0.140226 | max_attn=0.241749 | mean_attn=0.004630
+layer=25, head= 6 | needle_attn=0.133002 | max_attn=0.059912 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.3651503026485443, 'max_attention': 0.19355754554271698, 'mean_attention': 0.004629629664123058}
+True attention on needle: 0.12973344326019287
+Approx attention on needle: 0.11954592168331146
+Output cosine similarity: 0.9723443984985352
+Needle: The secret object #4 is an "umbrella".
+Needle positions: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 2 | needle_attn=0.483955 | max_attn=0.177819 | mean_attn=0.007812
+layer=29, head= 6 | needle_attn=0.307991 | max_attn=0.218604 | mean_attn=0.007937
+layer=13, head= 4 | needle_attn=0.287245 | max_attn=0.118722 | mean_attn=0.007812
+layer= 9, head= 2 | needle_attn=0.287172 | max_attn=0.167919 | mean_attn=0.007812
+layer=15, head= 1 | needle_attn=0.279946 | max_attn=0.250863 | mean_attn=0.007812
+layer= 4, head= 1 | needle_attn=0.271033 | max_attn=0.058246 | mean_attn=0.007937
+layer=10, head= 6 | needle_attn=0.270466 | max_attn=0.105158 | mean_attn=0.007812
+layer=25, head= 6 | needle_attn=0.270127 | max_attn=0.079658 | mean_attn=0.007812
+layer= 5, head= 1 | needle_attn=0.269087 | max_attn=0.126512 | mean_attn=0.007812
+layer=30, head= 3 | needle_attn=0.265607 | max_attn=0.053761 | mean_attn=0.007812
+Best needle head:
+{'layer': 8, 'head': 2, 'needle_attention': 0.4839552640914917, 'max_attention': 0.1778189241886139, 'mean_attention': 0.0078125}
+True attention on needle: 0.045207519084215164
+Approx attention on needle: 0.04690054804086685
+Output cosine similarity: 0.9994168281555176
+Needle: The secret food is a "pizza".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 9, head= 2 | needle_attn=0.309625 | max_attn=0.117502 | mean_attn=0.004717
+layer= 5, head= 1 | needle_attn=0.308895 | max_attn=0.086085 | mean_attn=0.004717
+layer= 8, head= 0 | needle_attn=0.239251 | max_attn=0.121755 | mean_attn=0.004717
+layer= 8, head= 7 | needle_attn=0.234351 | max_attn=0.075820 | mean_attn=0.004739
+layer= 7, head= 7 | needle_attn=0.181795 | max_attn=0.086183 | mean_attn=0.004717
+layer=15, head= 7 | needle_attn=0.152554 | max_attn=0.123726 | mean_attn=0.004739
+layer=14, head= 0 | needle_attn=0.145378 | max_attn=0.084322 | mean_attn=0.004717
+layer= 3, head= 0 | needle_attn=0.128308 | max_attn=0.059990 | mean_attn=0.004717
+layer= 8, head= 2 | needle_attn=0.124172 | max_attn=0.045108 | mean_attn=0.004739
+layer=28, head= 1 | needle_attn=0.121861 | max_attn=0.039279 | mean_attn=0.004717
+Best needle head:
+{'layer': 9, 'head': 2, 'needle_attention': 0.30962464213371277, 'max_attention': 0.1175016239285469, 'mean_attention': 0.004716980736702681}
+True attention on needle: 0.04865742474794388
+Approx attention on needle: 0.05425622686743736
+Output cosine similarity: 0.9969837069511414
+Needle: The secret transportation is a "car".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.323612 | max_attn=0.143418 | mean_attn=0.004651
+layer= 9, head= 2 | needle_attn=0.213744 | max_attn=0.092070 | mean_attn=0.004651
+layer=12, head= 6 | needle_attn=0.187563 | max_attn=0.099787 | mean_attn=0.004651
+layer=14, head= 4 | needle_attn=0.121212 | max_attn=0.106274 | mean_attn=0.004651
+layer=10, head= 6 | needle_attn=0.112824 | max_attn=0.067111 | mean_attn=0.004739
+layer=13, head= 4 | needle_attn=0.112237 | max_attn=0.144164 | mean_attn=0.004651
+layer=28, head= 5 | needle_attn=0.107157 | max_attn=0.050172 | mean_attn=0.004717
+layer=28, head= 0 | needle_attn=0.097642 | max_attn=0.095944 | mean_attn=0.004717
+layer=25, head= 6 | needle_attn=0.095155 | max_attn=0.084932 | mean_attn=0.004651
+layer=15, head= 7 | needle_attn=0.093471 | max_attn=0.189377 | mean_attn=0.004651
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.3236122727394104, 'max_attention': 0.14341849088668823, 'mean_attention': 0.004651162773370743}
+True attention on needle: 0.10059690475463867
+Approx attention on needle: 0.10337699204683304
+Output cosine similarity: 0.943779468536377
+Needle: The secret animal #4 is a "snake".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.660771 | max_attn=0.318453 | mean_attn=0.004630
+layer= 8, head= 2 | needle_attn=0.280004 | max_attn=0.091720 | mean_attn=0.004630
+layer= 9, head= 2 | needle_attn=0.223302 | max_attn=0.107455 | mean_attn=0.004630
+layer= 8, head= 0 | needle_attn=0.193507 | max_attn=0.378114 | mean_attn=0.004630
+layer= 7, head= 3 | needle_attn=0.154631 | max_attn=0.144326 | mean_attn=0.004630
+layer= 9, head= 7 | needle_attn=0.140756 | max_attn=0.051789 | mean_attn=0.004630
+layer=17, head= 3 | needle_attn=0.132220 | max_attn=0.061809 | mean_attn=0.004630
+layer=12, head= 6 | needle_attn=0.128257 | max_attn=0.048256 | mean_attn=0.004630
+layer=23, head= 2 | needle_attn=0.126193 | max_attn=0.075543 | mean_attn=0.004630
+layer=25, head= 7 | needle_attn=0.121487 | max_attn=0.086695 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.6607714891433716, 'max_attention': 0.3184533715248108, 'mean_attention': 0.004629630129784346}
+True attention on needle: 0.23767079412937164
+Approx attention on needle: 0.17058447003364563
+Output cosine similarity: 0.9887889623641968
+Needle: The secret tool is a "hammer".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer= 8, head= 0 | needle_attn=0.308731 | max_attn=0.133182 | mean_attn=0.004717
+layer= 5, head= 1 | needle_attn=0.268248 | max_attn=0.103787 | mean_attn=0.004717
+layer=12, head= 6 | needle_attn=0.189502 | max_attn=0.090213 | mean_attn=0.004717
+layer=13, head= 4 | needle_attn=0.175429 | max_attn=0.413046 | mean_attn=0.004717
+layer=15, head= 7 | needle_attn=0.139309 | max_attn=0.086102 | mean_attn=0.004717
+layer=11, head= 0 | needle_attn=0.133015 | max_attn=0.060982 | mean_attn=0.004717
+layer= 7, head= 3 | needle_attn=0.126281 | max_attn=0.102483 | mean_attn=0.004717
+layer=14, head= 0 | needle_attn=0.116141 | max_attn=0.117606 | mean_attn=0.004717
+layer= 8, head= 7 | needle_attn=0.115980 | max_attn=0.047953 | mean_attn=0.004717
+layer= 9, head= 2 | needle_attn=0.110740 | max_attn=0.075308 | mean_attn=0.004717
+Best needle head:
+{'layer': 8, 'head': 0, 'needle_attention': 0.3087308704853058, 'max_attention': 0.13318201899528503, 'mean_attention': 0.004716980736702681}
+True attention on needle: 0.0019126397091895342
+Approx attention on needle: 0.002965211868286133
+Output cosine similarity: 0.9921140670776367
+Needle: The secret clothing is a "t-shirt".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer=29, head= 7 | needle_attn=0.271914 | max_attn=0.250432 | mean_attn=0.004695
+layer= 5, head= 1 | needle_attn=0.242956 | max_attn=0.123262 | mean_attn=0.004695
+layer= 8, head= 7 | needle_attn=0.198983 | max_attn=0.131675 | mean_attn=0.004695
+layer= 8, head= 0 | needle_attn=0.196808 | max_attn=0.133423 | mean_attn=0.004695
+layer=12, head= 6 | needle_attn=0.196421 | max_attn=0.101420 | mean_attn=0.004695
+layer= 8, head= 2 | needle_attn=0.196281 | max_attn=0.057335 | mean_attn=0.004695
+layer=14, head= 0 | needle_attn=0.161815 | max_attn=0.107462 | mean_attn=0.004695
+layer=17, head= 3 | needle_attn=0.155868 | max_attn=0.111413 | mean_attn=0.004695
+layer= 9, head= 2 | needle_attn=0.154723 | max_attn=0.101546 | mean_attn=0.004695
+layer=25, head= 0 | needle_attn=0.153767 | max_attn=0.337111 | mean_attn=0.004695
+Best needle head:
+{'layer': 29, 'head': 7, 'needle_attention': 0.27191436290740967, 'max_attention': 0.2504323720932007, 'mean_attention': 0.004694835282862186}
+True attention on needle: 0.05454135313630104
+Approx attention on needle: 0.053152114152908325
+Output cosine similarity: 0.9971762895584106
+Needle: The secret animal #2 is a "zebra".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.470901 | max_attn=0.138466 | mean_attn=0.004608
+layer= 8, head= 0 | needle_attn=0.252864 | max_attn=0.114117 | mean_attn=0.004608
+layer=25, head= 6 | needle_attn=0.181769 | max_attn=0.065068 | mean_attn=0.004608
+layer=15, head= 1 | needle_attn=0.165814 | max_attn=0.181929 | mean_attn=0.004608
+layer=10, head= 1 | needle_attn=0.160452 | max_attn=0.064078 | mean_attn=0.004608
+layer=12, head= 6 | needle_attn=0.134969 | max_attn=0.053888 | mean_attn=0.004608
+layer=25, head= 0 | needle_attn=0.125731 | max_attn=0.339771 | mean_attn=0.004608
+layer= 3, head= 0 | needle_attn=0.114960 | max_attn=0.078810 | mean_attn=0.004608
+layer= 7, head= 7 | needle_attn=0.113439 | max_attn=0.048970 | mean_attn=0.004608
+layer= 8, head= 2 | needle_attn=0.110643 | max_attn=0.053018 | mean_attn=0.004608
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.47090059518814087, 'max_attention': 0.13846634328365326, 'mean_attention': 0.004608294926583767}
+True attention on needle: 0.10364930331707001
+Approx attention on needle: 0.056175608187913895
+Output cosine similarity: 0.995064914226532
+Needle: The secret animal #5 is a "pig".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.594320 | max_attn=0.366499 | mean_attn=0.004630
+layer= 8, head= 0 | needle_attn=0.218688 | max_attn=0.309221 | mean_attn=0.004630
+layer= 8, head= 7 | needle_attn=0.207703 | max_attn=0.053977 | mean_attn=0.004630
+layer= 9, head= 2 | needle_attn=0.179088 | max_attn=0.066438 | mean_attn=0.004630
+layer=13, head= 4 | needle_attn=0.148155 | max_attn=0.084542 | mean_attn=0.004630
+layer= 9, head= 7 | needle_attn=0.136873 | max_attn=0.051760 | mean_attn=0.004630
+layer=12, head= 6 | needle_attn=0.133050 | max_attn=0.067059 | mean_attn=0.004630
+layer= 8, head= 2 | needle_attn=0.132210 | max_attn=0.045877 | mean_attn=0.004630
+layer= 9, head= 1 | needle_attn=0.131333 | max_attn=0.065208 | mean_attn=0.004630
+layer= 9, head= 6 | needle_attn=0.123019 | max_attn=0.042615 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.5943202972412109, 'max_attention': 0.36649876832962036, 'mean_attention': 0.004629629664123058}
+True attention on needle: 0.15002062916755676
+Approx attention on needle: 0.11049134284257889
+Output cosine similarity: 0.9957417845726013
+Needle: The secret animal #1 is a "dog".
+Needle positions: [191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+
+--- TOP NEEDLE HEADS ---
+layer= 5, head= 1 | needle_attn=0.329334 | max_attn=0.151591 | mean_attn=0.004630
+layer=25, head= 0 | needle_attn=0.262298 | max_attn=0.302393 | mean_attn=0.004630
+layer= 8, head= 0 | needle_attn=0.251681 | max_attn=0.107137 | mean_attn=0.004630
+layer= 9, head= 2 | needle_attn=0.206802 | max_attn=0.072170 | mean_attn=0.004630
+layer=12, head= 6 | needle_attn=0.184049 | max_attn=0.063594 | mean_attn=0.004630
+layer=11, head= 0 | needle_attn=0.131971 | max_attn=0.069456 | mean_attn=0.004630
+layer= 9, head= 7 | needle_attn=0.130582 | max_attn=0.059662 | mean_attn=0.004630
+layer= 2, head= 5 | needle_attn=0.120185 | max_attn=0.064916 | mean_attn=0.004630
+layer=23, head= 2 | needle_attn=0.114712 | max_attn=0.063628 | mean_attn=0.004630
+layer= 8, head= 2 | needle_attn=0.114507 | max_attn=0.066854 | mean_attn=0.004630
+Best needle head:
+{'layer': 5, 'head': 1, 'needle_attention': 0.3293340802192688, 'max_attention': 0.15159067511558533, 'mean_attention': 0.004629629198461771}
+True attention on needle: 0.1229475885629654
+Approx attention on needle: 0.1346002221107483
+Output cosine similarity: 0.9966200590133667
+Needle: The secret vegetable is a "carrot".
+Needle positions: [190, 191, 192, 193, 194, 195, 196, 197, 198]
+
+--- TOP NEEDLE HEADS ---
+layer=25, head= 0 | needle_attn=0.359931 | max_attn=0.342947 | mean_attn=0.004695
+layer= 8, head= 7 | needle_attn=0.290737 | max_attn=0.065312 | mean_attn=0.004695
+layer= 5, head= 1 | needle_attn=0.261117 | max_attn=0.090860 | mean_attn=0.004695
+layer= 8, head= 0 | needle_attn=0.212482 | max_attn=0.117429 | mean_attn=0.004695
+layer= 7, head= 7 | needle_attn=0.156853 | max_attn=0.101526 | mean_attn=0.004695
+layer=12, head= 6 | needle_attn=0.149999 | max_attn=0.068108 | mean_attn=0.004695
+layer=14, head= 0 | needle_attn=0.136982 | max_attn=0.151049 | mean_attn=0.004695
+layer=28, head= 1 | needle_attn=0.134073 | max_attn=0.041133 | mean_attn=0.004695
+layer=24, head= 6 | needle_attn=0.127957 | max_attn=0.031947 | mean_attn=0.004695
+layer= 3, head= 0 | needle_attn=0.123661 | max_attn=0.060172 | mean_attn=0.004695
+Best needle head:
+{'layer': 25, 'head': 0, 'needle_attention': 0.35993117094039917, 'max_attention': 0.3429472744464874, 'mean_attention': 0.004694835748523474}
+True attention on needle: 0.00012866656470578164
+Approx attention on needle: 0.00017774285515770316
+Output cosine similarity: 0.9967787861824036
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28598669: <my_job> in cluster <dcc> Done
+
+Job <my_job> was submitted from host <n-62-20-9> by user <s235004> in cluster <dcc> at Thu Jun  4 07:31:59 2026
+Job was executed on host(s) <4*n-62-12-24>, in queue <gpua100>, as user <s235004> in cluster <dcc> at Thu Jun  4 09:35:54 2026
+</zhome/46/e/205491> was used as the home directory.
+</work3/s235004/Fagprojekt-2026> was used as the working directory.
+Started at Thu Jun  4 09:35:54 2026
+Terminated at Thu Jun  4 10:18:31 2026
+Results reported at Thu Jun  4 10:18:31 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J my_job
+#BSUB -q gpua100
+#BSUB -n 4
+#BSUB -R "rusage[mem=8GB]"
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 08:00
+#BSUB -o logs/%J.out
+#BSUB -e logs/%J.err
+
+source /work3/s235004/Fagprojekt-2026/.venv/bin/activate
+cd /work3/s235004/Fagprojekt-2026
+
+python src/fagprojekt/head_level_eval.py
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   2508.00 sec.
+    Max Memory :                                 1601 MB
+    Average Memory :                             1434.42 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31167.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                16
+    Run time :                                   2557 sec.
+    Turnaround time :                            9992 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/28598669.err> for stderr output of this job.
+
