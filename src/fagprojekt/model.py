@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import re
+import random
 
 
 MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
@@ -78,6 +79,8 @@ def get_messages(path, num_tokens):
 
     #Return last num_tokens of text
     return messages, text, needle
+
+
 
 def get_response(model, tokenizer, messages):
     """Generate a model response for a chat-style message list.

@@ -97,6 +97,9 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
         with torch.no_grad():
             key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
                                                        want_print=False, model=model, tokenizer=tokenizer)
+
+        "_____________________KOMMENTAR_________________"
+        "SKAL key_head og query_head ikke byttes om her?"
         true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
 
         # Perform SVD decomposition of K to get A and B matrices
@@ -174,6 +177,8 @@ def compare_hokus_pokus(path, method, model_path, k=50,layer_idx=0, head_idx=0):
     with torch.no_grad():
         key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
 
+    "_____________________KOMMENTAR_________________"
+    "SKAL key_head og query_head ikke byttes om her?"
     true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
     
     # Perform SVD decomposition of K to get A and B matrices
@@ -228,6 +233,8 @@ if __name__ == "__main__":
         for loss_method in ['mse', 'cosine','cosine_manual']:
             print(f"Training with loss method: {loss_method}")
 
+            "_____________________KOMMENTAR_________________"
+            "LOSS METODERNE SKAL VEL GIVES SOM INPUT TIL TRAIN? ELLERS BRUGER DEN BARE COSINE"
             # Train model on the training paths
             g_theta = train(paths, method=method,layer_idx=28,head_idx=0,k=k)
 

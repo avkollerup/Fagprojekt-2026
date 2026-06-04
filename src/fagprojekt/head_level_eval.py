@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 
 from fagprojekt.model import (load_model, get_kvq, get_messages,)
 from fagprojekt.SVD import (method_1, method_2, method_3)
-from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, find_needle_heads)
+from fagprojekt.head_level_eval_utils import(find_token_positions, evaluate_head, find_needle_heads, get_random_messages)
 
 #------------------------VARIABLES---------------------------
 page_number = 6
-num_tokens = 300
+num_tokens = 100
 num_top_heads = 10
 num_layers = None # write None if you want all layers
 num_heads = None # write None if you want all heads

@@ -70,6 +70,19 @@ def find_best_average_needle_head(txt_path):
 
 
 # Run on your log file
-best, averages = find_best_average_needle_head("logs/head_level_eval_100tokens.out")
+best, averages = find_best_average_needle_head("logs/head_level_eval_200tokens_random.out")
 
 #found: layer=22, head= 3 | avg_needle_attn=0.280908 | seen=7 times
+
+"""head_level_eval_200tokens_random"""
+# --- TOP CONSISTENT NEEDLE HEADS ---
+# layer= 5, head= 1 | avg_needle_attn=0.320317 | seen=24 times
+# layer=14, head= 0 | avg_needle_attn=0.218070 | seen=22 times
+# layer= 8, head= 0 | avg_needle_attn=0.457836 | seen=21 times
+# layer=11, head= 0 | avg_needle_attn=0.161872 | seen=21 times
+# layer= 3, head= 0 | avg_needle_attn=0.116166 | seen=15 times
+# layer= 9, head= 6 | avg_needle_attn=0.111437 | seen=14 times
+# layer= 9, head= 2 | avg_needle_attn=0.164137 | seen=9 times
+# layer= 9, head= 0 | avg_needle_attn=0.117675 | seen=9 times
+# layer=28, head= 0 | avg_needle_attn=0.132862 | seen=8 times
+# layer=25, head= 0 | avg_needle_attn=0.124907 | seen=8 times
