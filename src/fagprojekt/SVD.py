@@ -1,7 +1,8 @@
-from fagprojekt.model import get_kvq, get_messages, get_true_attention_values
+from fagprojekt.model import get_kvq, get_messages, get_true_attention_values, load_model
 import torch
 import os
 import numpy as np
+import math
 
 def do_SVD(matrix):
     """Compute singular value decomposition
@@ -25,9 +26,9 @@ def method_1(key_head, query_head, value_head, k):
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
-
+    d = key_head.shape[-1]
     # Compute attention values
-    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ value_head
+    attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ value_head
     return K, attn_values
 
 def decompose_K(key_head, k):
@@ -51,9 +52,9 @@ def method_4(key_head, query_head, value_head, k):
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
-
+    d = key_head.shape[-1]
     # Compute attention values
-    attn_values = torch.softmax((M + (query_head @ key_head.T)), dim=-1) @ V
+    attn_values = torch.softmax((M + (query_head @ key_head.T)/ math.sqrt(d)), dim=-1) @ V
     return V, attn_values
 
 def method_2(key_head, query_head, value_head, k):
@@ -68,9 +69,9 @@ def method_2(key_head, query_head, value_head, k):
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
-
+    d = key_head.shape[-1]
     # Compute attention values
-    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
+    attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ V
     return K, V, attn_values
 
 def method_3(key_head, query_head, value_head, k):
@@ -98,9 +99,9 @@ def method_3(key_head, query_head, value_head, k):
 
     # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
     M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
-
+    d = key_head.shape[-1]
     # Compute attention values
-    attn_values = torch.softmax((M + (query_head @ K.T)), dim=-1) @ V
+    attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ V
     return K, V, attn_values
 
 def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
@@ -112,27 +113,17 @@ def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
     return int(indices[0].item()) + 1  # component needed
 
 
-def tune_threshold(key_head, query_head, value_head, threshold_list, max_rel_mse):
-    """Find the most compressed k for each SVD method that keeps relative MSE <= max_rel_mse.
-
-    Sweeps all thresholds in a single pass, collecting every (threshold, k) pair that meets
-    the budget and simultaneously tracking the lowest-MSE result as a fallback.
-
-    Fallback when no threshold meets the budget: result with the lowest MSE.
-    """
+def tune_threshold(key_head, query_head, value_head, threshold_list):
+    """Compute relative MSE (MSE / mean(true²)) at each threshold for each SVD method."""
     true_attn = get_true_attention_values(query_head, key_head, value_head)
-    # Clamp denominator to avoid division by zero for degenerate all-zero attention outputs
-    denom = torch.clamp(torch.mean(true_attn ** 2), min=1e-12).item()
     joint = torch.cat((key_head, value_head), dim=1)
 
-    valid    = {'method_1': [], 'method_2': [], 'method_3': [], 'method_4': []}
-    fallback = {'method_1': None, 'method_2': None, 'method_3': None, 'method_4': None}
+    all_results = {'method_1': [], 'method_2': [], 'method_3': [], 'method_4': []}
 
-    for threshold in sorted(threshold_list):
+    for threshold in threshold_list:
         k_k      = first_k_for_threshold(key_head,  threshold)
         k_v      = first_k_for_threshold(value_head, threshold)
         k_joint  = first_k_for_threshold(joint,      threshold)
-        # Method 2 decomposes K and V separately, so both must independently meet the threshold
         k_kv_sep = max(k_k, k_v)
 
         candidates = {
@@ -142,25 +133,12 @@ def tune_threshold(key_head, query_head, value_head, threshold_list, max_rel_mse
             'method_3': (k_joint,  method_3(key_head, query_head, value_head, k=k_joint)[2]),
         }
 
+        denom = torch.mean(true_attn ** 2)
         for name, (k, approx) in candidates.items():
-            mse = torch.mean((true_attn - approx) ** 2).item()
-            rel_mse = mse / denom
-            if rel_mse <= max_rel_mse:
-                valid[name].append({'threshold': threshold, 'k': k, 'rel_mse': rel_mse})
-            # Always track the lowest-MSE result in case no threshold meets the budget
-            if fallback[name] is None or mse < fallback[name]['mse']:
-                fallback[name] = {'threshold': threshold, 'k': k, 'rel_mse': rel_mse, 'mse': mse}
+            mse = (torch.mean((true_attn - approx) ** 2) / denom).item()
+            all_results[name].append({'threshold': threshold, 'k': k, 'rel_mse': mse})
 
-    best = {}
-    for name in valid:
-        if valid[name]:
-            result = min(valid[name], key=lambda x: (x['k'], x['rel_mse']))
-            best[name] = {'threshold': result['threshold'], 'k': result['k'], 'rel_mse': result['rel_mse'], 'met_budget': True}
-        else:
-            fb = fallback[name]
-            best[name] = {'threshold': fb['threshold'], 'k': fb['k'], 'rel_mse': fb['rel_mse'], 'met_budget': False}
-
-    return best
+    return all_results
 
 
 def compare_attention(true_attn, approx_attn, name, want_print=True):
@@ -181,68 +159,73 @@ def compare_attention(true_attn, approx_attn, name, want_print=True):
 
 
 if __name__ == "__main__":
-    """Experiment: threshold tuning for SVD-based attention compression
-    
-    Goal: find the smallest threshold of explained variance per method
-    that keeps the attention output error within an acceptable budget.
-    
-    Why threshold instead of k directly?
-       k is hard to set without context. The SVD threshold is more interpretable:
-       it controls what fraction of singular value variance is retained, so
-       threshold=0.9 means "keep enough components to explain 90% of the variance."
-       tune_threshold converts this into a concrete k by finding the first index
-       where the cumulative explained variance crosses the threshold.
-    
-    Why sweep multiple rel_mse budgets?
-       The budget max_rel_mse = MSE / mean(true²) asks "how much attention error am I willing to tolerate?" 
-       Sweeping a range reveals at what budget each method becomes viable and how aggressively k
-       can be reduced while staying within the budget. If no threshold meets the budget, 
-       tune_threshold falls back to the threshold with the lowest MSE so results are always interpretable.
-    
-    Final comparison: each method is run at the threshold achieving its lowest
-    rel_mse across the full sweep (budget-free best quality), giving an upper
-    bound on how well each method can approximate the true attention output."""
-
+    import pandas as pd
+    import matplotlib.pyplot as plt
     from dotenv import load_dotenv
     load_dotenv()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
-    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
     head_idx   = int(os.environ["HEAD_IDX"])
 
-    messages, prompt, needle = get_messages(path, num_tokens=num_tokens)
-    key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
-    true_attn_values = get_true_attention_values(query_head, key_head, value_head)
-    print(f"True attention values dimension: {true_attn_values.shape}\n")
+    threshold_list = np.linspace(0.5, 0.99, 50).tolist()
 
-    threshold_list = np.linspace(0.7, 0.99, 50).tolist()
-    rel_mse_budgets = [0.01, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0]
+    rows = []
 
-    for max_rel_mse in rel_mse_budgets:
-        tuned = tune_threshold(key_head, query_head, value_head, threshold_list, max_rel_mse)
-        print(f"--- max_rel_mse={max_rel_mse} ---")
-        for name, result in tuned.items():
-            status = "ok" if result['met_budget'] else "budget not met"
-            print(f"  {name}: threshold={result['threshold']:.3f}, k={result['k']}, rel_mse={result['rel_mse']:.6e} ({status})")
-        print()
+    # load model only once
+    model,tokenizer = load_model()
 
-    # max_rel_mse=0 forces all methods to fallback, returning the lowest-MSE result per method
-    best = tune_threshold(key_head, query_head, value_head, threshold_list, max_rel_mse=0)
-    _, attn_values_method_1   = method_1(key_head, query_head, value_head, k=best['method_1']['k'])
-    _, _, attn_values_method_2 = method_2(key_head, query_head, value_head, k=best['method_2']['k'])
-    _, _, attn_values_method_3 = method_3(key_head, query_head, value_head, k=best['method_3']['k'])
-    _, attn_values_method_4   = method_4(key_head, query_head, value_head, k=best['method_4']['k'])
+    # iterate over pages:
+    pages = range(1, 11)
+    for page in pages:
+        path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
+        messages, _, _ = get_messages(path, num_tokens=num_tokens)
+        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
-    print("--- Best approximation per method (lowest rel_mse across sweep) ---")
-    for name, result in best.items():
-        print(f"  {name}: threshold={result['threshold']:.3f}, k={result['k']}, rel_mse={result['rel_mse']:.6e}")
-    print()
+        all_results = tune_threshold(key_head, query_head, value_head, threshold_list)
+        for method, results in all_results.items():
+            for result in results:
+                rows.append({"page": page, "method": method, "threshold": result["threshold"], "k": result["k"], "rel_mse": result["rel_mse"]})
 
-    print("Attention approximation error at each method's best threshold:")
-    compare_attention(true_attn_values, attn_values_method_1, "Method 1: Decompose only K")
-    compare_attention(true_attn_values, attn_values_method_4, "Method 4: Decompose only V")
-    compare_attention(true_attn_values, attn_values_method_2, "Method 2: Decompose K and V separately")
-    compare_attention(true_attn_values, attn_values_method_3, "Method 3: Decompose K and V jointly")
+    df = pd.DataFrame(rows)
+
+    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}"
+
+    # Save full per-prompt results
+    all_path = f"reports/figures/threshold_tuning_all_{tag}.csv"
+    df.to_csv(all_path, index=False)
+    print(f"Saved: {all_path}")
+
+    # Save per-threshold stats across prompts
+    stats_df = df.groupby(["method", "threshold"])["rel_mse"].agg(["mean", "std", "min", "max"]).reset_index()
+    stats_df.to_csv(f"reports/figures/threshold_tuning_all_stats_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/threshold_tuning_all_stats_{tag}.csv")
+
+    # Save best (lowest mean rel_mse) per method across all thresholds
+    best_df = df.loc[df.groupby("method")["rel_mse"].idxmin(), ["method", "threshold", "rel_mse"]].rename(columns={"rel_mse": "min_rel_mse"}).reset_index(drop=True)
+    best_df.to_csv(f"reports/figures/threshold_tuning_best_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/threshold_tuning_best_{tag}.csv")
+
+    # Plot MSE vs threshold with spread across prompts
+    methods = df["method"].unique()
+    fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
+    for ax, method in zip(axes, methods):
+        m = stats_df[stats_df["method"] == method].sort_values("threshold")
+        raw = df[df["method"] == method].sort_values("threshold")
+        ax.scatter(raw["threshold"], raw["rel_mse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+        ax.plot(m["threshold"], m["mean"], linewidth=2, color="tomato", label="mean")
+        ax.fill_between(m["threshold"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+        ax.tick_params(labelleft=True)
+        ax.set_title(method, fontsize=9, fontweight="bold")
+        ax.set_xlabel("Threshold")
+        ax.set_ylabel("Relative MSE (MSE / mean(true²))")
+        ax.legend(fontsize=7)
+        ax.grid(True, alpha=0.3)
+    fig.suptitle(f"Relative MSE vs threshold (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+    fig.tight_layout()
+    dist_path = f"reports/figures/threshold_distribution_{tag}.pdf"
+    fig.savefig(dist_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved: {dist_path}")
