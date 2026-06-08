@@ -10,12 +10,21 @@ import os
 
 
 
-def relative_explained_variance(matrix: torch.Tensor, components_list: list[int]) -> list[float]:
+def explained_variance_ratio(matrix: torch.Tensor, components_list: list[int]) -> list[float]:
     """Explained variance ratio: σ_k² / Σσ_i² for each k in components_list."""
     singular_values = torch.linalg.svdvals(matrix.float())
     total_variance = (singular_values ** 2).sum().item()
     max_rank = singular_values.shape[0]
     return [(singular_values[k - 1].item() ** 2 / total_variance if k <= max_rank else 0.0) for k in components_list]
+
+
+def cumulative_explained_variance(matrix: torch.Tensor, components_list: list[int]) -> list[float]:
+    singular_values = torch.linalg.svdvals(matrix.float())
+    explained_variance = singular_values**2
+    total_variance = torch.sum(explained_variance)
+    cumulative_ratio = torch.cumsum(explained_variance, dim=0) / total_variance
+    max_rank = cumulative_ratio.shape[0]
+    return [cumulative_ratio[min(k, max_rank) - 1].item() for k in components_list]
 
 
 def _plot_relative_mse(ax, x, avg_data, title, marker, xlabel, ylim=None):
@@ -30,14 +39,19 @@ def _plot_relative_mse(ax, x, avg_data, title, marker, xlabel, ylim=None):
     ax.grid(True, alpha=0.3)
 
 
-def _plot_relative_explained_var(ax, components_list, avg_data, title, marker, color):
-    """Plot explained variance ratio σ_k² / Σσ_i² vs number of components."""
+def _plot_explained_var_ratio(ax, components_list, avg_data, cum_data, title, marker, color):
+    """Plot explained variance ratio σ_k² / Σσ_i² vs number of components, with true cumulative ratio on secondary y-axis."""
     ax.plot(components_list, avg_data, marker=marker, linewidth=2, markersize=6, color=color)
     ax.set_title(title, fontsize=10, fontweight='bold')
     ax.set_ylabel('Avg. σ_k² / Σσ_i²')
     ax.set_xlabel('Num. components (k)')
-    ax.set_ylim(0.0, 0.6)
+    ax.set_ylim(0.0, 1.1)
     ax.grid(True, alpha=0.3)
+
+    ax2 = ax.twinx()
+    ax2.plot(components_list, cum_data, linestyle='--', linewidth=1.5, color=color, alpha=0.5)
+    ax2.set_ylabel('Cumulative explained variance ratio', fontsize=8)
+    ax2.set_ylim(0.0, 1.1)
 
 
 def _plot_k_needed(ax, threshold_list, avg_data, title, marker, color, ylim=None):
@@ -76,11 +90,17 @@ def pca_analysis(num_tokens, layer_idx):
     mse_kv_joint_dict = defaultdict(lambda: defaultdict(list))
     mse_v_dict = defaultdict(lambda: defaultdict(list))
 
-    # rel_ev_X_dict[head] = list of relative explained variance curves (one per page)
-    rel_ev_k_dict = defaultdict(list)
-    rel_ev_kv_sep_dict = defaultdict(list)
-    rel_ev_kv_joint_dict = defaultdict(list)
-    rel_ev_v_dict = defaultdict(list)
+    # evr_X_dict[head] = list of explained variance ratios (one per page)
+    evr_k_dict = defaultdict(list)
+    evr_kv_sep_dict = defaultdict(list)
+    evr_kv_joint_dict = defaultdict(list)
+    evr_v_dict = defaultdict(list)
+
+    # cum_ev_X_dict[head] = list of cumulative explained variance curves (one per page)
+    cum_ev_k_dict = defaultdict(list)
+    cum_ev_kv_sep_dict = defaultdict(list)
+    cum_ev_kv_joint_dict = defaultdict(list)
+    cum_ev_v_dict = defaultdict(list)
 
     # k_needed_X_dict[head][page] = components needed to meet each threshold, one per threshold
     k_needed_k_dict = defaultdict(lambda: defaultdict(list))
@@ -89,7 +109,7 @@ def pca_analysis(num_tokens, layer_idx):
     k_needed_v_dict = defaultdict(lambda: defaultdict(list))
 
     # test different number of components and different thresholds
-    components_list = list(map(int, np.linspace(1, 150, 30)))
+    components_list = list(map(int, np.linspace(1, 150, 25)))
     threshold_list = np.linspace(0.5, 0.99, 15).tolist()
 
     # iterate over pages
@@ -106,16 +126,26 @@ def pca_analysis(num_tokens, layer_idx):
 
             joint = torch.cat((key_head, value_head), dim=1)
 
-            # Relative explained variance curves (figure 1)
-            rev_k = relative_explained_variance(key_head, components_list)
-            rev_v = relative_explained_variance(value_head, components_list)
-            rev_joint = relative_explained_variance(joint, components_list)
+            # Explained variance ratio curves (figure 1)
+            evr_k = explained_variance_ratio(key_head, components_list)
+            evr_v = explained_variance_ratio(value_head, components_list)
+            evr_joint = explained_variance_ratio(joint, components_list)
 
-            rel_ev_k_dict[head].append(rev_k)
+            evr_k_dict[head].append(evr_k)
             # Method 2 decomposes K and V separately; average their curves as a shared summary
-            rel_ev_kv_sep_dict[head].append(((np.array(rev_k) + np.array(rev_v)) / 2.0).tolist())
-            rel_ev_kv_joint_dict[head].append(rev_joint)
-            rel_ev_v_dict[head].append(rev_v)
+            evr_kv_sep_dict[head].append(((np.array(evr_k) + np.array(evr_v)) / 2.0).tolist())
+            evr_kv_joint_dict[head].append(evr_joint)
+            evr_v_dict[head].append(evr_v)
+
+            # Cumulative explained variance curves (figure 1, secondary axis)
+            cev_k = cumulative_explained_variance(key_head, components_list)
+            cev_v = cumulative_explained_variance(value_head, components_list)
+            cev_joint = cumulative_explained_variance(joint, components_list)
+
+            cum_ev_k_dict[head].append(cev_k)
+            cum_ev_kv_sep_dict[head].append(((np.array(cev_k) + np.array(cev_v)) / 2.0).tolist())
+            cum_ev_kv_joint_dict[head].append(cev_joint)
+            cum_ev_v_dict[head].append(cev_v)
 
             true_attn_values = get_true_attention_values(query_head, key_head, value_head)
             # Normalize by mean squared true attention values so errors are comparable across heads with different scales
@@ -163,11 +193,17 @@ def pca_analysis(num_tokens, layer_idx):
         m2_avg = np.mean(np.array(list(mse_kv_sep_dict[head].values())), axis=0).tolist()
         m3_avg = np.mean(np.array(list(mse_kv_joint_dict[head].values())), axis=0).tolist()
 
-        # Average relative explained variance curves across pages for this head
-        ev1_avg = np.mean(np.array(rel_ev_k_dict[head]), axis=0).tolist()
-        ev4_avg = np.mean(np.array(rel_ev_v_dict[head]), axis=0).tolist()
-        ev2_avg = np.mean(np.array(rel_ev_kv_sep_dict[head]), axis=0).tolist()
-        ev3_avg = np.mean(np.array(rel_ev_kv_joint_dict[head]), axis=0).tolist()
+        # Average explained variance ratio curves across pages for this head
+        ev1_avg = np.mean(np.array(evr_k_dict[head]), axis=0).tolist()
+        ev4_avg = np.mean(np.array(evr_v_dict[head]), axis=0).tolist()
+        ev2_avg = np.mean(np.array(evr_kv_sep_dict[head]), axis=0).tolist()
+        ev3_avg = np.mean(np.array(evr_kv_joint_dict[head]), axis=0).tolist()
+
+        # Average cumulative explained variance curves across pages for this head
+        cev1_avg = np.mean(np.array(cum_ev_k_dict[head]), axis=0).tolist()
+        cev4_avg = np.mean(np.array(cum_ev_v_dict[head]), axis=0).tolist()
+        cev2_avg = np.mean(np.array(cum_ev_kv_sep_dict[head]), axis=0).tolist()
+        cev3_avg = np.mean(np.array(cum_ev_kv_joint_dict[head]), axis=0).tolist()
 
         all_mse = m1_avg + m4_avg + m2_avg + m3_avg
         mse_ylim = (min(all_mse) * 0.5, max(all_mse) * 2)
@@ -178,11 +214,11 @@ def pca_analysis(num_tokens, layer_idx):
         _plot_relative_mse(axes1[row_idx, 2], components_list, m2_avg, f'Rel. MSE - Method 2 (K & V sep) - Head {head}',   's', 'Num. components (k)', ylim=mse_ylim)
         _plot_relative_mse(axes1[row_idx, 3], components_list, m3_avg, f'Rel. MSE - Method 3 (K & V joint) - Head {head}', '^', 'Num. components (k)', ylim=mse_ylim)
 
-        # Relative explained variance vs k
-        _plot_relative_explained_var(axes1[row_idx, 4], components_list, ev1_avg, f'Explained Var Ratio - Method 1 (K) - Head {head}',           'o', 'tab:orange')
-        _plot_relative_explained_var(axes1[row_idx, 5], components_list, ev4_avg, f'Explained Var Ratio - Method 4 (V) - Head {head}',           'D', 'tab:red')
-        _plot_relative_explained_var(axes1[row_idx, 6], components_list, ev2_avg, f'Explained Var Ratio - Method 2 (K & V sep) - Head {head}',   's', 'tab:green')
-        _plot_relative_explained_var(axes1[row_idx, 7], components_list, ev3_avg, f'Explained Var Ratio - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue')
+        # Explained variance ratio vs k
+        _plot_explained_var_ratio(axes1[row_idx, 4], components_list, ev1_avg, cev1_avg, f'Expl. Var Ratio - Method 1 (K) - Head {head}',           'o', 'tab:orange')
+        _plot_explained_var_ratio(axes1[row_idx, 5], components_list, ev4_avg, cev4_avg, f'Expl. Var Ratio - Method 4 (V) - Head {head}',           'D', 'tab:red')
+        _plot_explained_var_ratio(axes1[row_idx, 6], components_list, ev2_avg, cev2_avg, f'Expl. Var Ratio - Method 2 (K & V sep) - Head {head}',   's', 'tab:green')
+        _plot_explained_var_ratio(axes1[row_idx, 7], components_list, ev3_avg, cev3_avg, f'Expl. Var Ratio - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue')
 
     fig1.suptitle(f'PCA Analysis (k sweep) - Layer {layer_idx} - Averaged Across Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
     fig1.tight_layout(rect=[0, 0, 1, 0.96])
