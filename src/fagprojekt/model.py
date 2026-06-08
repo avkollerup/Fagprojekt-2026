@@ -63,8 +63,16 @@ def get_messages(path, num_tokens):
     needle_num = int(re.search(r"page_(\d+)", path).group(1))
 
     needle_path=Path('/'.join((path.split('/')[:-2]))+'/needles.csv')
+
     with open(needle_path) as file:
-        needle=file.read().splitlines()[needle_num-1]
+        lines = file.read().splitlines()
+
+        if needle_num - 1 < len(lines):
+            needle = lines[needle_num - 1]
+        else:
+            raise ValueError(f"needle_num {needle_num} exceeds number of lines {len(lines)} in {needle_path} and path {path}")
+
+        #needle=file.read().splitlines()[needle_num-1]
 
     # get the promt
     prompt_path=Path('/'.join((path.split('/')[:-2]))+'/prompt_questions.txt')
