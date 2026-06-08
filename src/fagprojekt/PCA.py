@@ -11,12 +11,11 @@ import os
 
 
 def relative_explained_variance(matrix: torch.Tensor, components_list: list[int]) -> list[float]:
-    """Relative explained variance: (σ_k / σ_1)² for each k in components_list."""
+    """Explained variance ratio: σ_k² / Σσ_i² for each k in components_list."""
     singular_values = torch.linalg.svdvals(matrix.float())
-    sigma_1_sq = singular_values[0].item() ** 2
+    total_variance = (singular_values ** 2).sum().item()
     max_rank = singular_values.shape[0]
-    # k may exceed the matrix rank (e.g. components_list reaches 200 but key_head has 128 rows)
-    return [(singular_values[k - 1].item() ** 2 / sigma_1_sq if k <= max_rank else 0.0) for k in components_list]
+    return [(singular_values[k - 1].item() ** 2 / total_variance if k <= max_rank else 0.0) for k in components_list]
 
 
 def _plot_relative_mse(ax, x, avg_data, title, marker, xlabel, ylim=None):
@@ -32,12 +31,12 @@ def _plot_relative_mse(ax, x, avg_data, title, marker, xlabel, ylim=None):
 
 
 def _plot_relative_explained_var(ax, components_list, avg_data, title, marker, color):
-    """Plot relative explained variance (σ_k / σ_1)² vs number of components."""
+    """Plot explained variance ratio σ_k² / Σσ_i² vs number of components."""
     ax.plot(components_list, avg_data, marker=marker, linewidth=2, markersize=6, color=color)
     ax.set_title(title, fontsize=10, fontweight='bold')
-    ax.set_ylabel('Avg. (σ_k / σ_1)²')
+    ax.set_ylabel('Avg. σ_k² / Σσ_i²')
     ax.set_xlabel('Num. components (k)')
-    ax.set_ylim(0.0, 1.05)
+    ax.set_ylim(0.0, 0.6)
     ax.grid(True, alpha=0.3)
 
 
@@ -59,7 +58,7 @@ def pca_analysis(num_tokens, layer_idx):
 
     Figure 1 - fixed k sweep:
       - Relative MSE vs k
-      - Relative explained variance (σ_k / σ_1)² vs k
+      - Explained variance ratio σ_k² / Σσ_i² vs k
 
     Figure 2 - threshold sweep:
       - Components needed vs threshold
@@ -90,7 +89,7 @@ def pca_analysis(num_tokens, layer_idx):
     k_needed_v_dict = defaultdict(lambda: defaultdict(list))
 
     # test different number of components and different thresholds
-    components_list = list(map(int, np.linspace(10, 200, 10)))
+    components_list = list(map(int, np.linspace(1, 150, 30)))
     threshold_list = np.linspace(0.5, 0.99, 15).tolist()
 
     # iterate over pages
@@ -180,10 +179,10 @@ def pca_analysis(num_tokens, layer_idx):
         _plot_relative_mse(axes1[row_idx, 3], components_list, m3_avg, f'Rel. MSE - Method 3 (K & V joint) - Head {head}', '^', 'Num. components (k)', ylim=mse_ylim)
 
         # Relative explained variance vs k
-        _plot_relative_explained_var(axes1[row_idx, 4], components_list, ev1_avg, f'Rel. Explained Var - Method 1 (K) - Head {head}',           'o', 'tab:orange')
-        _plot_relative_explained_var(axes1[row_idx, 5], components_list, ev4_avg, f'Rel. Explained Var - Method 4 (V) - Head {head}',           'D', 'tab:red')
-        _plot_relative_explained_var(axes1[row_idx, 6], components_list, ev2_avg, f'Rel. Explained Var - Method 2 (K & V sep) - Head {head}',   's', 'tab:green')
-        _plot_relative_explained_var(axes1[row_idx, 7], components_list, ev3_avg, f'Rel. Explained Var - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue')
+        _plot_relative_explained_var(axes1[row_idx, 4], components_list, ev1_avg, f'Explained Var Ratio - Method 1 (K) - Head {head}',           'o', 'tab:orange')
+        _plot_relative_explained_var(axes1[row_idx, 5], components_list, ev4_avg, f'Explained Var Ratio - Method 4 (V) - Head {head}',           'D', 'tab:red')
+        _plot_relative_explained_var(axes1[row_idx, 6], components_list, ev2_avg, f'Explained Var Ratio - Method 2 (K & V sep) - Head {head}',   's', 'tab:green')
+        _plot_relative_explained_var(axes1[row_idx, 7], components_list, ev3_avg, f'Explained Var Ratio - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue')
 
     fig1.suptitle(f'PCA Analysis (k sweep) - Layer {layer_idx} - Averaged Across Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
     fig1.tight_layout(rect=[0, 0, 1, 0.96])
