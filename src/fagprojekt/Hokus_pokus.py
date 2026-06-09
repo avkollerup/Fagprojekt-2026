@@ -222,7 +222,7 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
     return (avg_mse, avg_frob, avg_cos)
 
  
-def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=5,layer_idx=0,head_idx=0,num_tokens=200,method = 'mse'):
+def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer_idx=0,head_idx=0,num_tokens=200,method = 'mse'):
     """Perform 5-fold crossvalidation to determine
     the best number of components to keep in the decomposition of K
     in the Hokus Pokus method"""
@@ -230,11 +230,11 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=5,layer
     # Load model if it does not exist yet
     if (model == None) or (tokenizer == None):
         model,tokenizer = load_model(want_print=False)
-    if folds != 5:
-        ValueError("This method is only implemented for 5-fold crossvalidation." \
-        f"You are currently using {folds}. Please change to 5. Hilsen Elisabeth")
+    if folds != 9:
+        ValueError("This method is only implemented for 9-fold crossvalidation." \
+        f"You are currently using {folds}. Please change to 9. Hilsen Elisabeth")
     
-    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup']
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Confinimmo','CVS','DWS','Entain']
     for fold in range(folds):
         print(f'Starting fold {fold+1}')
         # get paths
@@ -332,5 +332,7 @@ if __name__ == "__main__":
     model, tokenizer = load_model(want_print=False)
 
     mses = k_fold_crossvalidation_decide_k(model=model,tokenizer=tokenizer,layer_idx=layer_idx,head_idx=head_idx,num_tokens=num_tokens,method='mse')
-
-    print('mses')
+    
+    k_values = range(10,105,5)
+    print(k_values)
+    print(mses)
