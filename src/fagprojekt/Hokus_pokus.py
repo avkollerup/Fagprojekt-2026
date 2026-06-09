@@ -66,7 +66,6 @@ def hokus_pokus(query_head, value_head, key_head, k, method, g_theta):
     return transformed_input_data @ a_mat.T @ value_head
 
 
-
 def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine',plot_figure=True,model=None, tokenizer=None,tokens=100):
     """Train g_theta to mimic the baseline approximation.
 
@@ -86,8 +85,10 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
     # load model and tokenizer once to avoid doing it every step
     if model is None or tokenizer is None:
         model, tokenizer = load_model(want_print=False)
-    # initialize g_theta, optimizer and loss function
-    g_theta = build_mlp(k).to(model.device)
+
+    # initialize g_theta, optimizer and loss function on CPU to reduce GPU memory pressure
+    compute_device = torch.device("cpu")
+    g_theta = build_mlp(k).to(compute_device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
     if loss_method == 'cosine':
         loss_fn = torch.nn.CosineEmbeddingLoss()
@@ -102,15 +103,29 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
         # get messages for path
         messages, _, _ = get_messages(path, num_tokens=tokens)
 
-        # Use no_grad to prevent graph tracking from model
-        # extract the heads and true attention values
+        # Use no_grad to prevent graph tracking from model inference
         with torch.no_grad():
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
-                                                       want_print=False, model=model, tokenizer=tokenizer)
+            key_head, value_head, query_head = get_kvq(
+                messages,
+                layer_idx=layer_idx,
+                head_idx=head_idx,
+                want_print=False,
+                model=model,
+                tokenizer=tokenizer,
+            )
 
+        # Move extracted head tensors to CPU as early as possible to reduce GPU memory pressure.
+        key_head = key_head.cpu()
+        value_head = value_head.cpu()
+        query_head = query_head.cpu()
+        torch.cuda.empty_cache()
 
-        true_attn = get_true_attention_values(query_head=query_head, key_head=query_head, value_head = value_head).detach()
-
+        with torch.no_grad():
+            true_attn = get_true_attention_values(
+                query_head=query_head,
+                key_head=key_head,
+                value_head=value_head,
+            ).detach()
 
         y_pred = hokus_pokus(
             query_head=query_head,
@@ -143,6 +158,9 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
         if step % 5 == 0:
             print(f"step={step} loss={train_loss[-1]:.6e}")
         step += 1
+
+        del key_head, value_head, query_head, true_attn, y_pred
+        torch.cuda.empty_cache()
 
     # Plotting
     if plot_figure:
@@ -182,38 +200,64 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
     for path in paths:
         messages, _, _ = get_messages(path, num_tokens=tokens)
 
-        # Use no_grad to prevent graph tracking from model
+        # Use no_grad to prevent graph tracking from model inference
         with torch.no_grad():
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
+            key_head, value_head, query_head = get_kvq(
+                messages,
+                layer_idx=layer_idx,
+                head_idx=head_idx,
+                want_print=False,
+                model=model,
+                tokenizer=tokenizer,
+            )
 
-        true_attn = get_true_attention_values(query_head=query_head, key_head=key_head, value_head=value_head).detach()
-        
-        if method == "identity":
-            loaded_g_theta = None
-        
-        elif method == "mlp":
-            # if we have already loaded g_theta, no need to load it again
-            if loaded_g_theta is None:
-                loaded_g_theta = build_mlp(k).to(query_head.device)
-                loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
-                loaded_g_theta.eval()
-
+        if loaded_g_theta is not None:
+            compute_device = next(loaded_g_theta.parameters()).device
         else:
-            raise ValueError("Method not mlp or identity")
+            compute_device = torch.device("cpu")
 
-        final_attn = hokus_pokus(
-            query_head=query_head,
-            value_head=value_head,
-            key_head=key_head,
-            k=k,
-            method=method,
-            g_theta=loaded_g_theta,
-        ).clone()
+        key_head = key_head.to(compute_device)
+        value_head = value_head.to(compute_device)
+        query_head = query_head.to(compute_device)
+        torch.cuda.empty_cache()
+
+        with torch.no_grad():
+            true_attn = get_true_attention_values(
+                query_head=query_head,
+                key_head=key_head,
+                value_head=value_head,
+            ).detach()
+
+            if method == "identity":
+                loaded_g_theta = None
+            
+            elif method == "mlp":
+                # if we have already loaded g_theta, no need to load it again
+                if loaded_g_theta is None:
+                    loaded_g_theta = build_mlp(k).to(compute_device)
+                    loaded_g_theta.load_state_dict(torch.load(model_path, map_location=compute_device))
+                    loaded_g_theta.eval()
+
+            else:
+                raise ValueError("Method not mlp or identity")
+
+            final_attn = hokus_pokus(
+                query_head=query_head,
+                value_head=value_head,
+                key_head=key_head,
+                k=k,
+                method=method,
+                g_theta=loaded_g_theta,
+            ).clone()
+
         mse,frob,cos = compare_attention(true_attn, final_attn, "Hokus Pokus vs true_attn",want_print=False)
         # append errors to lists for later analysis
         mse_errors.append(mse)
         frob_norm_errors.append(frob)
         cosine_errors.append(cos)
+
+        del key_head, value_head, query_head, true_attn, final_attn
+        torch.cuda.empty_cache()
     # after loop, compute average errors
     avg_mse = sum(mse_errors) / len(mse_errors)
     avg_frob = sum(frob_norm_errors) / len(frob_norm_errors)
@@ -223,7 +267,7 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
 
  
 def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer_idx=0,head_idx=0,num_tokens=200,method = 'mse'):
-    """Perform 5-fold crossvalidation to determine
+    """Perform 9-fold crossvalidation to determine
     the best number of components to keep in the decomposition of K
     in the Hokus Pokus method"""
     k_values = range(10,105,5)
@@ -231,7 +275,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
     if (model == None) or (tokenizer == None):
         model,tokenizer = load_model(want_print=False)
     if folds != 9:
-        ValueError("This method is only implemented for 9-fold crossvalidation." \
+        raise ValueError("This method is only implemented for 9-fold crossvalidation." \
         f"You are currently using {folds}. Please change to 9. Hilsen Elisabeth")
     
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Confinimmo','CVS','DWS','Entain']
@@ -258,8 +302,14 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
             g_theta.eval()
 
             # Load and compare model   
-            mse,frob,cos = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
+            with torch.no_grad():
+                mse,frob,cos = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
             mses[k_val].append(mse)
+            
+            # cleanup
+            del g_theta
+            torch.cuda.empty_cache()
+
     
     # now we should compute the average mse for each k over folds
     for k_val in k_values:
