@@ -86,7 +86,7 @@ def method_3(key_head, query_head, value_head, k):
     Vt_k = Vt_J[:k_eff, :]
 
     # Determine A matrix
-    A = U_k @ S_k  
+    A = U_k @ S_k
 
     # Extract B, C matrix
     head_dim = key_head.shape[1]
@@ -103,14 +103,6 @@ def method_3(key_head, query_head, value_head, k):
     # Compute attention values
     attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ V
     return K, V, attn_values
-
-def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
-    """Smallest k such that the top-k singular values capture at least `threshold` of total variance."""
-    singular_values = torch.linalg.svdvals(matrix.float())
-    explained_variance = singular_values ** 2
-    cumulative_ratio = torch.cumsum(explained_variance, dim=0) / torch.sum(explained_variance)
-    indices = torch.where(cumulative_ratio >= threshold)[0]
-    return int(indices[0].item()) + 1  # component needed
 
 
 def get_rmse(key_head, query_head, value_head, k_per_method):
@@ -134,6 +126,8 @@ def get_rmse(key_head, query_head, value_head, k_per_method):
                 _, _, approx = method_2(key_head, query_head, value_head, k=k)
             elif name == 'method_3':
                 _, _, approx = method_3(key_head, query_head, value_head, k=k)
+            else:
+                continue
 
             mse, _, cos_sim = compare_attention(true_attn, approx, name, want_print=False)
             all_results[name].append({'k': k, 'rmse': math.sqrt(mse), 'cos_sim': cos_sim})
@@ -141,6 +135,8 @@ def get_rmse(key_head, query_head, value_head, k_per_method):
     return all_results
 
 def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, company):
+    import pandas as pd
+    import matplotlib.pyplot as plt
     rows = []
 
     # load model only once
@@ -173,7 +169,7 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, 
     print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}.csv")
 
     # Save best (lowest mean rmse) per method across all ks
-    best_df = df.loc[df.groupby("method")["rmse"].idxmin(), ["method", "k", "rmse"]].rename(columns={"rmse": "min_rmse"}).reset_index(drop=True)
+    best_df = stats_df.loc[stats_df.groupby("method")["mean"].idxmin(), ["method", "k", "mean"]].rename(columns={"mean": "min_mean_rmse"}).reset_index(drop=True)
     best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}.csv", index=False)
     print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}.csv")
 
@@ -183,17 +179,29 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, 
     for ax, method in zip(axes, methods):
         m = stats_df[stats_df["method"] == method].sort_values("k")
         raw = df[df["method"] == method].sort_values("k")
-        if raw["k"].nunique() == 1:
-            t = raw["k"].iloc[0]
-            ax.boxplot(raw["rmse"], patch_artist=True, boxprops=dict(facecolor="steelblue", alpha=0.6))
-            ax.set_xticks([1], [f"{t}"])
-            ax.set_xlabel("k")
-        else:
-            ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
-            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
-            ax.set_xlabel("k")
-            ax.legend(fontsize=7)
+        ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+        ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+        ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+
+        # Elbow: exclude near-zero plateau, normalize to [0,1], find where slope first rises above -1
+        ks = m["k"].values.astype(float)
+        means = m["mean"].values.astype(float)
+        valid = means > means.max() * 0.01
+        ks_v, means_v = ks[valid], means[valid]
+        if len(ks_v) > 1:
+            k_range = ks_v.max() - ks_v.min()
+            r_range = means_v.max() - means_v.min()
+            if k_range > 0 and r_range > 0:
+                k_norm = (ks_v - ks_v.min()) / k_range
+                r_norm = (means_v - means_v.min()) / r_range
+                slopes_norm = np.diff(r_norm) / np.diff(k_norm)
+                cross_idx = np.where(slopes_norm >= -1)[0]
+                if len(cross_idx) > 0:
+                    k_cross = int(ks_v[cross_idx[0]])
+                    ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
+
+        ax.set_xlabel("k")
+        ax.legend(fontsize=7)
         ax.tick_params(labelleft=True)
         ax.set_title(method, fontsize=9, fontweight="bold")
         ax.set_ylabel("RMSE")
@@ -211,17 +219,26 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, 
     for ax, method in zip(axes2, methods):
         m = cos_stats_df[cos_stats_df["method"] == method].sort_values("k")
         raw = df[df["method"] == method].sort_values("k")
-        if raw["k"].nunique() == 1:
-            t = raw["k"].iloc[0]
-            ax.boxplot(raw["cos_sim"], patch_artist=True, boxprops=dict(facecolor="steelblue", alpha=0.6))
-            ax.set_xticks([1], [f"{t}"])
-            ax.set_xlabel("k")
-        else:
-            ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
-            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
-            ax.set_xlabel("k")
-            ax.legend(fontsize=7)
+        ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+        ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+        ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+
+        # Elbow: normalize to [0,1], find where slope first drops below +1
+        ks = m["k"].values.astype(float)
+        means = m["mean"].values.astype(float)
+        k_range = ks.max() - ks.min()
+        c_range = means.max() - means.min()
+        if len(ks) > 1 and k_range > 0 and c_range > 0:
+            k_norm = (ks - ks.min()) / k_range
+            c_norm = (means - means.min()) / c_range
+            slopes_norm = np.diff(c_norm) / np.diff(k_norm)
+            cross_idx = np.where(slopes_norm < 1)[0]
+            if len(cross_idx) > 0:
+                k_cross = int(ks[cross_idx[0]])
+                ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
+
+        ax.set_xlabel("k")
+        ax.legend(fontsize=7)
         ax.tick_params(labelleft=True)
         ax.set_title(method, fontsize=9, fontweight="bold")
         ax.set_ylabel("Cosine similarity")
@@ -257,7 +274,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
@@ -267,9 +284,9 @@ if __name__ == "__main__":
 
     # Testing across many ks (same list for all methods)
     k_list = np.linspace(1, 150, 50, dtype=int).tolist()
-    path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page"
-    get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, path, "AIG")
+    path = "document-haystack/APA/APA_25Pages/Text_TextNeedles/APA_25Pages_TextNeedles_page"
+    # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, path, "APA")
 
     # Testing given k (same for all methods)
     path = "document-haystack/AmericanAirlines/AmericanAirlines_25Pages/Text_TextNeedles/AmericanAirlines_25Pages_TextNeedles_page"
-    get_results_k(layer_idx, head_idx, num_tokens, {m: [60] for m in all_methods}, path, "AmericanAirlines")
+    get_results_k(layer_idx, head_idx, num_tokens, {"method_1":[22,38,63], "method_2": [22,32,69], "method_3": [19,38,69], "method_4": [22,38,63]}, path, "AmericanAirlines")
