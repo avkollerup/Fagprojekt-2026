@@ -25,12 +25,14 @@ def build_mlp(k):
     )
 
 
-def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
+def hokus_pokus(query_head, value_head, key_head, k, method, g_theta):
     """Approximate attention values with optional learned score transform.
 
     Args:
         query_head: Query tensor of shape [seq_len, head_dim].
         value_head: Value tensor of shape [seq_len, head_dim].
+        key_head: Key tensor of shape [seq_len, head_dim].
+        k: Rank used for K decomposition.
         a_mat: Decomposition matrix A with shape [seq_len, rank].
         b_mat: Decomposition matrix B with shape [head_dim, rank].
         method: Either "identity" or "mlp".
@@ -39,6 +41,12 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     Returns:
         Approximated attention values with shape [seq_len, head_dim].
     """
+
+    # Perform SVD decomposition of K to get A and B matrices
+    a_mat, b_mat = decompose_K(key_head, k=k)
+    # Detach to break computation graph (a_mat, b_mat are fixed, not trainable)
+    a_mat = a_mat.detach()
+    b_mat = b_mat.detach()
 
     # QB
     # print(query_head.size())
@@ -58,8 +66,7 @@ def hokus_pokus(query_head, value_head, a_mat, b_mat, method, g_theta):
     return transformed_input_data @ a_mat.T @ value_head
 
 
-
-def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine',plot_figure=True,model=None, tokenizer=None):
+def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine',plot_figure=True,model=None, tokenizer=None,tokens=100):
     """Train g_theta to mimic the baseline approximation.
 
     Args:
@@ -78,8 +85,10 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
     # load model and tokenizer once to avoid doing it every step
     if model is None or tokenizer is None:
         model, tokenizer = load_model(want_print=False)
-    # initialize g_theta, optimizer and loss function
-    g_theta = build_mlp(k).to(model.device)
+
+    # initialize g_theta, optimizer and loss function on CPU to reduce GPU memory pressure
+    compute_device = torch.device("cpu")
+    g_theta = build_mlp(k).to(compute_device)
     optimizer = torch.optim.Adam(g_theta.parameters(), lr=lr)
     if loss_method == 'cosine':
         loss_fn = torch.nn.CosineEmbeddingLoss()
@@ -92,29 +101,37 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
     for path in paths:
 
         # get messages for path
-        messages, _, _ = get_messages(path, num_tokens=100)
+        messages, _, _ = get_messages(path, num_tokens=tokens)
 
-        # Use no_grad to prevent graph tracking from model
-        # extract the heads and true attention values
+        # Use no_grad to prevent graph tracking from model inference
         with torch.no_grad():
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, 
-                                                       want_print=False, model=model, tokenizer=tokenizer)
+            key_head, value_head, query_head = get_kvq(
+                messages,
+                layer_idx=layer_idx,
+                head_idx=head_idx,
+                want_print=False,
+                model=model,
+                tokenizer=tokenizer,
+            )
 
-        "_____________________KOMMENTAR_________________"
-        "SKAL key_head og query_head ikke byttes om her?"
-        true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
+        # Move extracted head tensors to CPU as early as possible to reduce GPU memory pressure.
+        key_head = key_head.cpu()
+        value_head = value_head.cpu()
+        query_head = query_head.cpu()
+        torch.cuda.empty_cache()
 
-        # Perform SVD decomposition of K to get A and B matrices
-        a_mat, b_mat = decompose_K(key_head, k=k)
-        # Detach to break computation graph (a_mat, b_mat are fixed, not trainable)
-        a_mat = a_mat.detach()
-        b_mat = b_mat.detach()
+        with torch.no_grad():
+            true_attn = get_true_attention_values(
+                query_head=query_head,
+                key_head=key_head,
+                value_head=value_head,
+            ).detach()
 
         y_pred = hokus_pokus(
             query_head=query_head,
             value_head=value_head,
-            a_mat=a_mat,
-            b_mat=b_mat,
+            key_head=key_head,
+            k=k,
             method=method,
             g_theta=g_theta,
         )
@@ -142,9 +159,12 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
             print(f"step={step} loss={train_loss[-1]:.6e}")
         step += 1
 
+        del key_head, value_head, query_head, true_attn, y_pred
+        torch.cuda.empty_cache()
+
     # Plotting
     if plot_figure:
-        output_path = f"reports/figures/hokus_pokus_train_loss_{method}.png"
+        output_path = f"reports/figures/hokus_pokus_train_loss_{method}_k_{k}.png"
 
         plt.figure(figsize=(8, 4))
         plt.plot(train_loss, linewidth=2)
@@ -178,49 +198,66 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
     cosine_errors=[]
 
     for path in paths:
-        messages, _, _ = get_messages(path, num_tokens=100)
+        messages, _, _ = get_messages(path, num_tokens=tokens)
 
-        # Use no_grad to prevent graph tracking from model
+        # Use no_grad to prevent graph tracking from model inference
         with torch.no_grad():
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
+            key_head, value_head, query_head = get_kvq(
+                messages,
+                layer_idx=layer_idx,
+                head_idx=head_idx,
+                want_print=False,
+                model=model,
+                tokenizer=tokenizer,
+            )
 
-        "_____________________KOMMENTAR_________________"
-        "SKAL key_head og query_head ikke byttes om her?"
-        true_attn = get_true_attention_values(key_head, query_head, value_head).detach()
-        
-        # Perform SVD decomposition of K to get A and B matrices
-        a_mat, b_mat = decompose_K(key_head, k=k)
-        # Detach to break computation graph
-        a_mat = a_mat.detach()
-        b_mat = b_mat.detach()
-
-
-        if method == "identity":
-            loaded_g_theta = None
-        
-        elif method == "mlp":
-            # if we have already loaded g_theta, no need to load it again
-            if loaded_g_theta is None:
-                loaded_g_theta = build_mlp(k).to(query_head.device)
-                loaded_g_theta.load_state_dict(torch.load(model_path, map_location=query_head.device))
-                loaded_g_theta.eval()
-
+        if loaded_g_theta is not None:
+            compute_device = next(loaded_g_theta.parameters()).device
         else:
-            raise ValueError("Method not mlp or identity")
+            compute_device = torch.device("cpu")
 
-        final_attn = hokus_pokus(
-            query_head=query_head,
-            value_head=value_head,
-            a_mat=a_mat,
-            b_mat=b_mat,
-            method=method,
-            g_theta=loaded_g_theta,
-        ).clone()
+        key_head = key_head.to(compute_device)
+        value_head = value_head.to(compute_device)
+        query_head = query_head.to(compute_device)
+        torch.cuda.empty_cache()
+
+        with torch.no_grad():
+            true_attn = get_true_attention_values(
+                query_head=query_head,
+                key_head=key_head,
+                value_head=value_head,
+            ).detach()
+
+            if method == "identity":
+                loaded_g_theta = None
+            
+            elif method == "mlp":
+                # if we have already loaded g_theta, no need to load it again
+                if loaded_g_theta is None:
+                    loaded_g_theta = build_mlp(k).to(compute_device)
+                    loaded_g_theta.load_state_dict(torch.load(model_path, map_location=compute_device))
+                    loaded_g_theta.eval()
+
+            else:
+                raise ValueError("Method not mlp or identity")
+
+            final_attn = hokus_pokus(
+                query_head=query_head,
+                value_head=value_head,
+                key_head=key_head,
+                k=k,
+                method=method,
+                g_theta=loaded_g_theta,
+            ).clone()
+
         mse,frob,cos = compare_attention(true_attn, final_attn, "Hokus Pokus vs true_attn",want_print=False)
         # append errors to lists for later analysis
         mse_errors.append(mse)
         frob_norm_errors.append(frob)
         cosine_errors.append(cos)
+
+        del key_head, value_head, query_head, true_attn, final_attn
+        torch.cuda.empty_cache()
     # after loop, compute average errors
     avg_mse = sum(mse_errors) / len(mse_errors)
     avg_frob = sum(frob_norm_errors) / len(frob_norm_errors)
@@ -228,21 +265,64 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
 
     return (avg_mse, avg_frob, avg_cos)
 
+ 
+def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer_idx=0,head_idx=0,num_tokens=200,method = 'mse'):
+    """Perform 9-fold crossvalidation to determine
+    the best number of components to keep in the decomposition of K
+    in the Hokus Pokus method"""
+    k_values = range(10,105,5)
+    # Load model if it does not exist yet
+    if (model == None) or (tokenizer == None):
+        model,tokenizer = load_model(want_print=False)
+    if folds != 9:
+        raise ValueError("This method is only implemented for 9-fold crossvalidation." \
+        f"You are currently using {folds}. Please change to 9. Hilsen Elisabeth")
+    
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Confinimmo','CVS','DWS','Entain']
+    for fold in range(folds):
+        print(f'Starting fold {fold+1}')
+        # get paths
+        train_paths = []
+        for i in range(5):
+            if i == fold:
+                test_dir = Path(f"document-haystack/{companies[fold]}/{companies[fold]}_25Pages/Text_TextNeedles")
+                test_paths = list(test_dir.glob("*.txt"))
+                test_paths = [str(p) for p in test_paths]
+            else:
+                base_dir = Path(f"document-haystack/{companies[i]}/{companies[i]}_25Pages/Text_TextNeedles")
+                paths = list(base_dir.glob("*.txt"))
+                train_paths.extend([str(p) for p in paths])
+        
+        # now train for evey k value:
+        mses = {k_value:[] for k_value in k_values}
+        for k_val in k_values:
+            print(f'Training and evaluating model with k={k_val}')
+            # Train model on the training paths
+            g_theta = train(train_paths, method='mlp',layer_idx=layer_idx,head_idx=head_idx,k=k_val,model=model,tokenizer=tokenizer,loss_method=method,tokens=num_tokens,plot_figure=False)
+            g_theta.eval()
 
-if __name__ == "__main__":
-    # --------------- PARAMETERS --------------
-    from dotenv import load_dotenv
-    load_dotenv()
+            # Load and compare model   
+            with torch.no_grad():
+                mse,frob,cos = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
+            mses[k_val].append(mse)
+            
+            # cleanup
+            del g_theta
+            torch.cuda.empty_cache()
 
-    num_tokens = int(os.environ["NUM_TOKENS"])
-    layer_idx = int(os.environ["LAYER_IDX"])
-    head_idx = int(os.environ["HEAD_IDX"])
-    k =  int(os.environ["k"]) # number of components to keep in SVD decomposition
+    
+    # now we should compute the average mse for each k over folds
+    for k_val in k_values:
+        mses[k_val] = sum(mses[k_val])/folds
+    plt.plot(k_values,list(mses.values()),'o-')
+    plt.title('MSE error on test set over k values')
+    plt.xlabel('K')
+    plt.ylabel('MSE error on attention')
+    plt.savefig('reports/figures/hokus_pokus_k_analysis_CV.png')
 
-    # --------------- LOAD MODEL ONLY ONCE ---------------
-    print("Loading model and tokenizer once at the start...")
-    model, tokenizer = load_model(want_print=False)
+    return mses
 
+def test_loss_methods(model,tokenizer,num_tokens,layer_idx,head_idx,k):
     # --------------- TRAINING AND TEST PATHS ---------------
     # create list of paths for training
     base_dir = Path("document-haystack/AIG/AIG_25Pages/Text_TextNeedles")
@@ -260,17 +340,15 @@ if __name__ == "__main__":
 
     # if we just use the identity method, there is no need for training
     if method == "identity":
-        compare_hokus_pokus(paths=test_paths, method=method, model_path=None, k=k)
+        compare_hokus_pokus(paths=test_paths, method=method, model_path=None, k=k,tokens=num_tokens)
 
     else:
         # compute for all types of loss methods
-        for loss_method in ['mse', 'cosine']:
+        for loss_method in ['mse']:#, 'cosine']:
             print(f"Training with loss method: {loss_method}")
-
-            "_____________________KOMMENTAR_________________"
-            "LOSS METODERNE SKAL VEL GIVES SOM INPUT TIL TRAIN? ELLERS BRUGER DEN BARE COSINE"
+            
             # Train model on the training paths
-            g_theta = train(paths, method=method,layer_idx=layer_idx,head_idx=head_idx,k=k,model=model,tokenizer=tokenizer,loss_method=loss_method)
+            g_theta = train(paths, method=method,layer_idx=layer_idx,head_idx=head_idx,k=k,model=model,tokenizer=tokenizer,loss_method=loss_method,tokens=num_tokens,plot_figure=False)
 
             # Save model
             model_path = f"models/g_theta_weights_{method}.pth"
@@ -287,3 +365,24 @@ if __name__ == "__main__":
             print(f"  Average MSE: {mse:.6e}")
             print(f"  Average Relative Frobenius error: {frob:.6e}")
             print(f"  Average Cosine similarity: {cos:.6f}\n")
+
+
+if __name__ == "__main__":
+    # --------------- PARAMETERS --------------
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    num_tokens = int(os.environ["NUM_TOKENS"])
+    layer_idx = int(os.environ["LAYER_IDX"])
+    head_idx = int(os.environ["HEAD_IDX"])
+    #k =  int(os.environ["k"]) # number of components to keep in SVD decomposition
+
+    # --------------- LOAD MODEL ONLY ONCE ---------------
+    print("Loading model and tokenizer once at the start...")
+    model, tokenizer = load_model(want_print=False)
+
+    mses = k_fold_crossvalidation_decide_k(model=model,tokenizer=tokenizer,layer_idx=layer_idx,head_idx=head_idx,num_tokens=num_tokens,method='mse')
+    
+    k_values = range(10,105,5)
+    print(k_values)
+    print(mses)
