@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from fagprojekt.SVD import method_1, method_2, method_3, method_4, first_k_for_threshold
+from fagprojekt.SVD import method_1, method_2, method_3, method_4
 from fagprojekt.model import load_model, get_kvq, get_messages, get_true_attention_values
 
 from collections import defaultdict
@@ -50,36 +50,41 @@ def _plot_explained_var_ratio(ax, components_list, avg_data, cum_data, title, ma
 
     ax2 = ax.twinx()
     ax2.plot(components_list, cum_data, linestyle='--', linewidth=1.5, color=color, alpha=0.5, label="Cumulative")
-    ax2.set_ylabel('Cumulative', fontsize=8)
+    ax2.set_ylabel('Cumulative explained variance', fontsize=8)
     ax2.set_ylim(0.0, 1.1)
-    ax2.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+
+    # Elbow on the cumulative curve: normalize to [0,1], find where slope first rises above +1
+    x_arr = np.array(components_list, dtype=float)
+    c_arr = np.array(cum_data)
+    k_norm = (x_arr - x_arr.min()) / (x_arr.max() - x_arr.min())
+    c_norm = (c_arr - c_arr.min()) / (c_arr.max() - c_arr.min())
+    slopes = np.diff(c_norm) / np.diff(k_norm)
+    ci = np.where(slopes < 1)[0]
+    if len(ci) > 0:
+        k_elbow = int(x_arr[ci[0]])
+        ax2.axvline(k_elbow, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_elbow}")
+
+    # 95% explained variance
+    ci95 = np.where(c_arr >= 0.95)[0]
+    if len(ci95) > 0:
+        k_95 = int(x_arr[ci95[0]])
+        ax2.axvline(k_95, color="purple", linestyle=":", linewidth=1.5, label=f"95% var k={k_95}")
+
+    ax2.legend(loc='upper left', fontsize=7)
 
 
-def _plot_k_needed(ax, threshold_list, avg_data, title, marker, color, ylim=None):
-    """Plot components needed to meet each threshold."""
-    ax.plot(threshold_list, avg_data, marker=marker, linewidth=2, markersize=6, color=color)
-    ax.set_title(title, fontsize=10, fontweight='bold')
-    ax.set_ylabel('Avg. components needed (k)')
-    ax.set_xlabel('Threshold')
-    ax.grid(True, alpha=0.3)
-    if ylim is not None:
-        ax.set_ylim(ylim)
 
-
-def pca_analysis(num_tokens, layer_idx):
+def pca_analysis(num_tokens, layer_idx, path):
     """Run SVD approximation analysis across pages and heads for a given layer.
-
-    Iterates over 10 pages and 5 attention heads, computing two parallel analyses:
+    
+    Iterates over 25 pages and 5 attention heads, computing:
 
     Figure 1 - fixed k sweep:
       - RMSE vs k
       - Explained variance ratio σ_k² / Σσ_i² vs k
 
-    Figure 2 - threshold sweep:
-      - Components needed vs threshold
-
-    Both figures average results across pages and save one row per head to PDF.
-    """
+    The results are averaged across pages"""
     print(f"Num_tokens: {num_tokens}, layer_idx: {layer_idx}")
 
     # load model only once
@@ -103,21 +108,13 @@ def pca_analysis(num_tokens, layer_idx):
     cum_ev_kv_joint_dict = defaultdict(list)
     cum_ev_v_dict = defaultdict(list)
 
-    # k_needed_X_dict[head][page] = components needed to meet each threshold, one per threshold
-    k_needed_k_dict = defaultdict(lambda: defaultdict(list))
-    k_needed_kv_sep_dict = defaultdict(lambda: defaultdict(list))
-    k_needed_kv_joint_dict = defaultdict(lambda: defaultdict(list))
-    k_needed_v_dict = defaultdict(lambda: defaultdict(list))
-
-    # test different number of components and different thresholds
     components_list = list(map(int, np.linspace(1, 150, 25)))
-    threshold_list = np.linspace(0.5, 0.99, 15).tolist()
 
     # iterate over pages
     pages = range(1, 11)
     for page in pages:
-        path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
-        messages, _, _ = get_messages(path, num_tokens=num_tokens)
+        page_path = f'{path}_{page}.txt'
+        messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
 
         # perform for each head
         heads = range(0,5)
@@ -160,19 +157,6 @@ def pca_analysis(num_tokens, layer_idx):
                 rmse_kv_sep_dict[head][page].append(torch.mean((true_attn_values - attn_values_kv_sep) ** 2).sqrt().item())
                 rmse_kv_joint_dict[head][page].append(torch.mean((true_attn_values - attn_values_kv_joint) ** 2).sqrt().item())
                 rmse_v_dict[head][page].append(torch.mean((true_attn_values - attn_values_v) ** 2).sqrt().item())
-
-            # Threshold sweep (figure 2): k is derived per method based on the threshold
-            for threshold in threshold_list:
-                k_k = first_k_for_threshold(key_head, threshold)
-                k_v = first_k_for_threshold(value_head, threshold)
-                k_joint = first_k_for_threshold(joint, threshold)
-                # Method 2 decomposes K and V separately, so both must independently meet the threshold
-                k_kv_sep = max(k_k, k_v)
-
-                k_needed_k_dict[head][page].append(k_k)
-                k_needed_kv_sep_dict[head][page].append(k_kv_sep)
-                k_needed_kv_joint_dict[head][page].append(k_joint)
-                k_needed_v_dict[head][page].append(k_v)
 
     heads = sorted(rmse_k_dict.keys())
     num_heads = len(heads)
@@ -223,43 +207,16 @@ def pca_analysis(num_tokens, layer_idx):
     fig1.savefig(f'reports/figures/PCA/pca_k_sweep_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
     plt.close(fig1)
 
-    # -----------------------------------------------------------------------
-    # Figure 2: threshold sweep - Components needed vs threshold
-    # -----------------------------------------------------------------------
-    fig2, axes2 = plt.subplots(num_heads, 4, figsize=(16, 4 * num_heads))
-    if num_heads == 1:
-        axes2 = axes2.reshape(1, -1)
-
-    for row_idx, head in enumerate(heads):
-        # Average k needed across pages for this head
-        k1_avg = np.mean(np.array(list(k_needed_k_dict[head].values())), axis=0).tolist()
-        k4_avg = np.mean(np.array(list(k_needed_v_dict[head].values())), axis=0).tolist()
-        k2_avg = np.mean(np.array(list(k_needed_kv_sep_dict[head].values())), axis=0).tolist()
-        k3_avg = np.mean(np.array(list(k_needed_kv_joint_dict[head].values())), axis=0).tolist()
-
-        all_k_vals = k1_avg + k4_avg + k2_avg + k3_avg
-        k_needed_ylim = (max(0, min(all_k_vals) - 2), max(all_k_vals) + 2)
-
-        # Components needed vs threshold
-        _plot_k_needed(axes2[row_idx, 0], threshold_list, k1_avg, f'Components needed - Method 1 (K) - Head {head}',           'o', 'tab:orange', ylim=k_needed_ylim)
-        _plot_k_needed(axes2[row_idx, 1], threshold_list, k4_avg, f'Components needed - Method 4 (V) - Head {head}',           'D', 'tab:red',    ylim=k_needed_ylim)
-        _plot_k_needed(axes2[row_idx, 2], threshold_list, k2_avg, f'Components needed - Method 2 (K & V sep) - Head {head}',   's', 'tab:green',  ylim=k_needed_ylim)
-        _plot_k_needed(axes2[row_idx, 3], threshold_list, k3_avg, f'Components needed - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue',   ylim=k_needed_ylim)
-
-    fig2.suptitle(f'PCA Analysis (threshold sweep) - Layer {layer_idx} - Averaged Across Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
-    fig2.tight_layout(rect=[0, 0, 1, 0.96])
-    fig2.savefig(f'reports/figures/PCA/pca_threshold_sweep_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
-    plt.close(fig2)
-
 
 if __name__ == "__main__":
     # --------------- PARAMETERS --------------
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
+    path = "document-haystack/APA/APA_25Pages/Text_TextNeedles/APA_25Pages_TextNeedles_page"
 
     # --------------- PCA analysis ---------------
-    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx)
+    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx, path=path)
