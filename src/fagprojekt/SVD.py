@@ -113,32 +113,125 @@ def first_k_for_threshold(matrix: torch.Tensor, threshold: float = 0.9) -> int:
     return int(indices[0].item()) + 1  # component needed
 
 
-def tune_threshold(key_head, query_head, value_head, threshold_list):
-    """Compute relative MSE (MSE / mean(true²)) at each threshold for each SVD method."""
+def get_rmse(key_head, query_head, value_head, k_per_method):
+    """Compute RMSE, relative Frobenius error, and cosine similarity for each method and k.
+
+    Args:
+        k_per_method: dict mapping method name to a list of k values, e.g.
+            {'method_1': [80, 90], 'method_2': [95], 'method_3': [60], 'method_4': [85]}
+    """
     true_attn = get_true_attention_values(query_head, key_head, value_head)
-    joint = torch.cat((key_head, value_head), dim=1)
 
-    all_results = {'method_1': [], 'method_2': [], 'method_3': [], 'method_4': []}
+    all_results = {name: [] for name in k_per_method}
 
-    for threshold in threshold_list:
-        k_k      = first_k_for_threshold(key_head,  threshold)
-        k_v      = first_k_for_threshold(value_head, threshold)
-        k_joint  = first_k_for_threshold(joint,      threshold)
-        k_kv_sep = max(k_k, k_v)
+    for name, k_list in k_per_method.items():
+        for k in k_list:
+            if name == 'method_1':
+                _, approx = method_1(key_head, query_head, value_head, k=k)
+            elif name == 'method_4':
+                _, approx = method_4(key_head, query_head, value_head, k=k)
+            elif name == 'method_2':
+                _, _, approx = method_2(key_head, query_head, value_head, k=k)
+            elif name == 'method_3':
+                _, _, approx = method_3(key_head, query_head, value_head, k=k)
 
-        candidates = {
-            'method_1': (k_k,      method_1(key_head, query_head, value_head, k=k_k)[1]),
-            'method_4': (k_v,      method_4(key_head, query_head, value_head, k=k_v)[1]),
-            'method_2': (k_kv_sep, method_2(key_head, query_head, value_head, k=k_kv_sep)[2]),
-            'method_3': (k_joint,  method_3(key_head, query_head, value_head, k=k_joint)[2]),
-        }
-
-        denom = torch.mean(true_attn ** 2)
-        for name, (k, approx) in candidates.items():
-            mse = (torch.mean((true_attn - approx) ** 2) / denom).item()
-            all_results[name].append({'threshold': threshold, 'k': k, 'rel_mse': mse})
+            mse, _, cos_sim = compare_attention(true_attn, approx, name, want_print=False)
+            all_results[name].append({'k': k, 'rmse': math.sqrt(mse), 'cos_sim': cos_sim})
 
     return all_results
+
+def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, company):
+    rows = []
+
+    # load model only once
+    model,tokenizer = load_model()
+
+    # iterate over pages:
+    pages = range(1, 11)
+    for page in pages:
+        page_path = f'{path}_{page}.txt'
+        messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
+        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
+
+        all_results = get_rmse(key_head, query_head, value_head, thresholds_per_method)
+        for method, results in all_results.items():
+            for result in results:
+                rows.append({"page": page, "method": method, "k": result["k"], "rmse": result["rmse"], "cos_sim": result["cos_sim"]})
+
+    df = pd.DataFrame(rows)
+
+    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_company_{company}"
+
+    # Save full per-prompt results
+    all_path = f"reports/figures/SVD/k_tuning_all_{tag}.csv"
+    df.to_csv(all_path, index=False)
+    print(f"Saved: {all_path}")
+
+    # Save per-k stats across prompts
+    stats_df = df.groupby(["method", "k"])["rmse"].agg(["mean", "std", "min", "max"]).reset_index()
+    stats_df.to_csv(f"reports/figures/SVD/k_tuning_all_stats_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}.csv")
+
+    # Save best (lowest mean rmse) per method across all ks
+    best_df = df.loc[df.groupby("method")["rmse"].idxmin(), ["method", "k", "rmse"]].rename(columns={"rmse": "min_rmse"}).reset_index(drop=True)
+    best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}.csv")
+
+    # Plot RMSE vs k with spread across prompts
+    methods = df["method"].unique()
+    fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
+    for ax, method in zip(axes, methods):
+        m = stats_df[stats_df["method"] == method].sort_values("k")
+        raw = df[df["method"] == method].sort_values("k")
+        if raw["k"].nunique() == 1:
+            t = raw["k"].iloc[0]
+            ax.boxplot(raw["rmse"], patch_artist=True, boxprops=dict(facecolor="steelblue", alpha=0.6))
+            ax.set_xticks([1], [f"{t}"])
+            ax.set_xlabel("k")
+        else:
+            ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+            ax.set_xlabel("k")
+            ax.legend(fontsize=7)
+        ax.tick_params(labelleft=True)
+        ax.set_title(method, fontsize=9, fontweight="bold")
+        ax.set_ylabel("RMSE")
+        ax.grid(True, alpha=0.3)
+    fig.suptitle(f"RMSE vs k (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+    fig.tight_layout()
+    dist_path = f"reports/figures/SVD/k_distribution_{tag}.pdf"
+    fig.savefig(dist_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved: {dist_path}")
+
+    # Plot cosine similarity vs k with spread across prompts
+    cos_stats_df = df.groupby(["method", "k"])["cos_sim"].agg(["mean", "std"]).reset_index()
+    fig2, axes2 = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
+    for ax, method in zip(axes2, methods):
+        m = cos_stats_df[cos_stats_df["method"] == method].sort_values("k")
+        raw = df[df["method"] == method].sort_values("k")
+        if raw["k"].nunique() == 1:
+            t = raw["k"].iloc[0]
+            ax.boxplot(raw["cos_sim"], patch_artist=True, boxprops=dict(facecolor="steelblue", alpha=0.6))
+            ax.set_xticks([1], [f"{t}"])
+            ax.set_xlabel("k")
+        else:
+            ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+            ax.set_xlabel("k")
+            ax.legend(fontsize=7)
+        ax.tick_params(labelleft=True)
+        ax.set_title(method, fontsize=9, fontweight="bold")
+        ax.set_ylabel("Cosine similarity")
+        ax.grid(True, alpha=0.3)
+    fig2.suptitle(f"Cosine similarity vs k (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+    fig2.tight_layout()
+    cos_path = f"reports/figures/SVD/k_cosine_{tag}.pdf"
+    fig2.savefig(cos_path, dpi=150)
+    plt.close(fig2)
+    print(f"Saved: {cos_path}")
 
 
 def compare_attention(true_attn, approx_attn, name, want_print=True):
@@ -164,68 +257,19 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
     head_idx   = int(os.environ["HEAD_IDX"])
 
-    threshold_list = np.linspace(0.5, 0.99, 50).tolist()
+    all_methods = ['method_1', 'method_2', 'method_3', 'method_4']
 
-    rows = []
+    # Testing across many ks (same list for all methods)
+    k_list = np.linspace(1, 150, 50, dtype=int).tolist()
+    path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page"
+    get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, path, "AIG")
 
-    # load model only once
-    model,tokenizer = load_model()
-
-    # iterate over pages:
-    pages = range(1, 11)
-    for page in pages:
-        path = f'document-haystack/AIG/AIG_10Pages/Text_TextNeedles/AIG_10Pages_TextNeedles_page_{page}.txt'
-        messages, _, _ = get_messages(path, num_tokens=num_tokens)
-        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
-
-        all_results = tune_threshold(key_head, query_head, value_head, threshold_list)
-        for method, results in all_results.items():
-            for result in results:
-                rows.append({"page": page, "method": method, "threshold": result["threshold"], "k": result["k"], "rel_mse": result["rel_mse"]})
-
-    df = pd.DataFrame(rows)
-
-    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}"
-
-    # Save full per-prompt results
-    all_path = f"reports/figures/threshold_tuning_all_{tag}.csv"
-    df.to_csv(all_path, index=False)
-    print(f"Saved: {all_path}")
-
-    # Save per-threshold stats across prompts
-    stats_df = df.groupby(["method", "threshold"])["rel_mse"].agg(["mean", "std", "min", "max"]).reset_index()
-    stats_df.to_csv(f"reports/figures/threshold_tuning_all_stats_{tag}.csv", index=False)
-    print(f"Saved: reports/figures/threshold_tuning_all_stats_{tag}.csv")
-
-    # Save best (lowest mean rel_mse) per method across all thresholds
-    best_df = df.loc[df.groupby("method")["rel_mse"].idxmin(), ["method", "threshold", "rel_mse"]].rename(columns={"rel_mse": "min_rel_mse"}).reset_index(drop=True)
-    best_df.to_csv(f"reports/figures/threshold_tuning_best_{tag}.csv", index=False)
-    print(f"Saved: reports/figures/threshold_tuning_best_{tag}.csv")
-
-    # Plot MSE vs threshold with spread across prompts
-    methods = df["method"].unique()
-    fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
-    for ax, method in zip(axes, methods):
-        m = stats_df[stats_df["method"] == method].sort_values("threshold")
-        raw = df[df["method"] == method].sort_values("threshold")
-        ax.scatter(raw["threshold"], raw["rel_mse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-        ax.plot(m["threshold"], m["mean"], linewidth=2, color="tomato", label="mean")
-        ax.fill_between(m["threshold"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
-        ax.tick_params(labelleft=True)
-        ax.set_title(method, fontsize=9, fontweight="bold")
-        ax.set_xlabel("Threshold")
-        ax.set_ylabel("Relative MSE (MSE / mean(true²))")
-        ax.legend(fontsize=7)
-        ax.grid(True, alpha=0.3)
-    fig.suptitle(f"Relative MSE vs threshold (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
-    fig.tight_layout()
-    dist_path = f"reports/figures/threshold_distribution_{tag}.pdf"
-    fig.savefig(dist_path, dpi=150)
-    plt.close(fig)
-    print(f"Saved: {dist_path}")
+    # Testing given k (same for all methods)
+    path = "document-haystack/AmericanAirlines/AmericanAirlines_25Pages/Text_TextNeedles/AmericanAirlines_25Pages_TextNeedles_page"
+    get_results_k(layer_idx, head_idx, num_tokens, {m: [60] for m in all_methods}, path, "AmericanAirlines")
