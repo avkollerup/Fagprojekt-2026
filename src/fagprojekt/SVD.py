@@ -3,6 +3,7 @@ import torch
 import os
 import numpy as np
 import math
+from pathlib import Path
 
 def do_SVD(matrix):
     """Compute singular value decomposition
@@ -134,44 +135,46 @@ def get_rmse(key_head, query_head, value_head, k_per_method):
 
     return all_results
 
-def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, company):
+def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, companies):
     import pandas as pd
     import matplotlib.pyplot as plt
-    rows = []
 
-    # load model only once
+    rows = []
     model,tokenizer = load_model()
 
-    # iterate over pages:
-    pages = range(1, 11)
-    for page in pages:
-        page_path = f'{path}_{page}.txt'
-        messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
-        key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
+    pages = range(1, 26)
+    for company in companies:
+        base_dir = Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")
+        for page in pages:
+            page_path = f'{base_dir}_page_{page}.txt'
+            messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
+            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
+            all_results = get_rmse(key_head, query_head, value_head, thresholds_per_method)
+            for method, results in all_results.items():
+                for result in results:
+                    rows.append({"company": company, "page": page, "method": method, "k": result["k"], "rmse": result["rmse"], "cos_sim": result["cos_sim"]})
 
-        all_results = get_rmse(key_head, query_head, value_head, thresholds_per_method)
-        for method, results in all_results.items():
-            for result in results:
-                rows.append({"page": page, "method": method, "k": result["k"], "rmse": result["rmse"], "cos_sim": result["cos_sim"]})
+        print(f"Done: {company}")
 
     df = pd.DataFrame(rows)
 
-    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_company_{company}"
+    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}"
 
     # Save full per-prompt results
-    all_path = f"reports/figures/SVD/k_tuning_all_{tag}.csv"
-    df.to_csv(all_path, index=False)
-    print(f"Saved: {all_path}")
+    df.to_csv(f"reports/figures/SVD/k_tuning_all_{tag}_test.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_all_{tag}_test.csv")
 
     # Save per-k stats across prompts
     stats_df = df.groupby(["method", "k"])["rmse"].agg(["mean", "std", "min", "max"]).reset_index()
-    stats_df.to_csv(f"reports/figures/SVD/k_tuning_all_stats_{tag}.csv", index=False)
-    print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}.csv")
+    stats_df.to_csv(f"reports/figures/SVD/k_tuning_all_stats_{tag}_test.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}_test.csv")
 
     # Save best (lowest mean rmse) per method across all ks
     best_df = stats_df.loc[stats_df.groupby("method")["mean"].idxmin(), ["method", "k", "mean"]].rename(columns={"mean": "min_mean_rmse"}).reset_index(drop=True)
-    best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}.csv", index=False)
-    print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}.csv")
+    best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}_test.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}_test.csv")
+
+    n_prompts = len(df) // len(df["method"].unique()) // len(df["k"].unique())
 
     # Plot RMSE vs k with spread across prompts
     methods = df["method"].unique()
@@ -206,9 +209,9 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, 
         ax.set_title(method, fontsize=9, fontweight="bold")
         ax.set_ylabel("RMSE")
         ax.grid(True, alpha=0.3)
-    fig.suptitle(f"RMSE vs k (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+    fig.suptitle(f"RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
     fig.tight_layout()
-    dist_path = f"reports/figures/SVD/k_distribution_{tag}.pdf"
+    dist_path = f"reports/figures/SVD/k_distribution_{tag}_test.pdf"
     fig.savefig(dist_path, dpi=150)
     plt.close(fig)
     print(f"Saved: {dist_path}")
@@ -243,9 +246,9 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, path, 
         ax.set_title(method, fontsize=9, fontweight="bold")
         ax.set_ylabel("Cosine similarity")
         ax.grid(True, alpha=0.3)
-    fig2.suptitle(f"Cosine similarity vs k (spread across {len(pages)} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+    fig2.suptitle(f"Cosine similarity vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
     fig2.tight_layout()
-    cos_path = f"reports/figures/SVD/k_cosine_{tag}.pdf"
+    cos_path = f"reports/figures/SVD/k_cosine_{tag}_test.pdf"
     fig2.savefig(cos_path, dpi=150)
     plt.close(fig2)
     print(f"Saved: {cos_path}")
@@ -282,11 +285,12 @@ if __name__ == "__main__":
 
     all_methods = ['method_1', 'method_2', 'method_3', 'method_4']
 
-    # Testing across many ks (same list for all methods)
+    # Finding best k
     k_list = np.linspace(1, 150, 50, dtype=int).tolist()
-    path = "document-haystack/APA/APA_25Pages/Text_TextNeedles/APA_25Pages_TextNeedles_page"
-    # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, path, "APA")
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
+    # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, companies)
 
-    # Testing given k (same for all methods)
-    path = "document-haystack/AmericanAirlines/AmericanAirlines_25Pages/Text_TextNeedles/AmericanAirlines_25Pages_TextNeedles_page"
-    get_results_k(layer_idx, head_idx, num_tokens, {"method_1":[22,38,63], "method_2": [22,32,69], "method_3": [19,38,69], "method_4": [22,38,63]}, path, "AmericanAirlines")
+    # Testing given best k — averaged across multiple companies
+    best_k = {"method_1":[34,63], "method_2": [22,69], "method_3": [25,69], "method_4": [22,63]}
+    companies = ['JPMorgan','Kroger','NewRiver','PNC','Reach','Sagicor','United','UPS','Vesuvius']
+    get_results_k(layer_idx, head_idx, num_tokens, best_k, companies)
