@@ -279,7 +279,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
         raise ValueError("This method is only implemented for 9-fold crossvalidation." \
         f"You are currently using {folds}. Please change to 9. Hilsen Elisabeth")
     
-    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Confinimmo','CVS','DWS','Entain']
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
     for fold in range(folds):
         print(f'Starting fold {fold+1}')
         # get paths
