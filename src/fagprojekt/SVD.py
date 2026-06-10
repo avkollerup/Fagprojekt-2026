@@ -232,6 +232,7 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, compan
         k_range = ks.max() - ks.min()
         c_range = means.max() - means.min()
         if len(ks) > 1 and k_range > 0 and c_range > 0:
+            # xnormalized = (x - xminimum) / range of x
             k_norm = (ks - ks.min()) / k_range
             c_norm = (means - means.min()) / c_range
             slopes_norm = np.diff(c_norm) / np.diff(k_norm)
@@ -291,6 +292,6 @@ if __name__ == "__main__":
     # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, companies)
 
     # Testing given best k — averaged across multiple companies
-    best_k = {"method_1":[34,63], "method_2": [22,69], "method_3": [25,69], "method_4": [22,63]}
+    best_k = {"method_1":[15,34,63], "method_2": [15,22,75], "method_3": [15,25,69], "method_4": [15,22,63]}
     companies = ['JPMorgan','Kroger','NewRiver','PNC','Reach','Sagicor','United','UPS','Vesuvius']
     get_results_k(layer_idx, head_idx, num_tokens, best_k, companies)
