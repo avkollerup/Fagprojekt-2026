@@ -54,16 +54,8 @@ def _plot_explained_var_ratio(ax, components_list, avg_data, cum_data, title, ma
     ax2.set_ylim(0.0, 1.1)
     ax2.legend(loc='upper right')
 
-    # Elbow on the cumulative curve: normalize to [0,1], find where slope first rises above +1
     x_arr = np.array(components_list, dtype=float)
     c_arr = np.array(cum_data)
-    k_norm = (x_arr - x_arr.min()) / (x_arr.max() - x_arr.min())
-    c_norm = (c_arr - c_arr.min()) / (c_arr.max() - c_arr.min())
-    slopes = np.diff(c_norm) / np.diff(k_norm)
-    ci = np.where(slopes < 1)[0]
-    if len(ci) > 0:
-        k_elbow = int(x_arr[ci[0]])
-        ax2.axvline(k_elbow, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_elbow}")
 
     # 95% explained variance
     ci95 = np.where(c_arr >= 0.95)[0]
@@ -75,10 +67,10 @@ def _plot_explained_var_ratio(ax, components_list, avg_data, cum_data, title, ma
 
 
 
-def pca_analysis(num_tokens, layer_idx, path):
+def pca_analysis(num_tokens, layer_idx, companies):
     """Run SVD approximation analysis across pages and heads for a given layer.
     
-    Iterates over 25 pages and 5 attention heads, computing:
+    Iterates over pages from different companies and 5 attention heads, computing:
 
     Figure 1 - fixed k sweep:
       - RMSE vs k
@@ -86,11 +78,10 @@ def pca_analysis(num_tokens, layer_idx, path):
 
     The results are averaged across pages"""
     print(f"Num_tokens: {num_tokens}, layer_idx: {layer_idx}")
-
     # load model only once
     model,tokenizer = load_model()
 
-    # rmse_X_dict[head][page] = list of RMSE values, one per k in components_list
+    # rmse_X_dict[head][(company, page)] = list of RMSE values, one per k in components_list
     rmse_k_dict = defaultdict(lambda: defaultdict(list))
     rmse_kv_sep_dict = defaultdict(lambda: defaultdict(list))
     rmse_kv_joint_dict = defaultdict(lambda: defaultdict(list))
@@ -111,52 +102,57 @@ def pca_analysis(num_tokens, layer_idx, path):
     components_list = list(map(int, np.linspace(1, 150, 25)))
 
     # iterate over pages
-    pages = range(1, 11)
-    for page in pages:
-        page_path = f'{path}_{page}.txt'
-        messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
+    pages = range(1, 26)
+    for company in companies:
+        base_dir = f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles_page"
+        for page in pages:
+            page_path = f'{base_dir}_{page}.txt'
+            messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
 
-        # perform for each head
-        heads = range(0,5)
-        for head in heads:
-            # Get K, V, Q
-            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head, want_print=False, model=model, tokenizer=tokenizer)
+            # perform for each head
+            heads = range(0,5)
+            for head in heads:
+                # Get K, V, Q
+                key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head, want_print=False, model=model, tokenizer=tokenizer)
 
-            joint = torch.cat((key_head, value_head), dim=1)
+                joint = torch.cat((key_head, value_head), dim=1)
 
-            # Explained variance ratio curves (figure 1)
-            evr_k = explained_variance_ratio(key_head, components_list)
-            evr_v = explained_variance_ratio(value_head, components_list)
-            evr_joint = explained_variance_ratio(joint, components_list)
+                # Explained variance ratio curves (figure 1)
+                evr_k = explained_variance_ratio(key_head, components_list)
+                evr_v = explained_variance_ratio(value_head, components_list)
+                evr_joint = explained_variance_ratio(joint, components_list)
 
-            evr_k_dict[head].append(evr_k)
-            # Method 2 decomposes K and V separately; average their curves as a shared summary
-            evr_kv_sep_dict[head].append(((np.array(evr_k) + np.array(evr_v)) / 2.0).tolist())
-            evr_kv_joint_dict[head].append(evr_joint)
-            evr_v_dict[head].append(evr_v)
+                evr_k_dict[head].append(evr_k)
+                # Method 2 decomposes K and V separately; average their curves as a shared summary
+                evr_kv_sep_dict[head].append(((np.array(evr_k) + np.array(evr_v)) / 2.0).tolist())
+                evr_kv_joint_dict[head].append(evr_joint)
+                evr_v_dict[head].append(evr_v)
 
-            # Cumulative explained variance curves (figure 1, secondary axis)
-            cev_k = cumulative_explained_variance(key_head, components_list)
-            cev_v = cumulative_explained_variance(value_head, components_list)
-            cev_joint = cumulative_explained_variance(joint, components_list)
+                # Cumulative explained variance curves (figure 1, secondary axis)
+                cev_k = cumulative_explained_variance(key_head, components_list)
+                cev_v = cumulative_explained_variance(value_head, components_list)
+                cev_joint = cumulative_explained_variance(joint, components_list)
 
-            cum_ev_k_dict[head].append(cev_k)
-            cum_ev_kv_sep_dict[head].append(((np.array(cev_k) + np.array(cev_v)) / 2.0).tolist())
-            cum_ev_kv_joint_dict[head].append(cev_joint)
-            cum_ev_v_dict[head].append(cev_v)
+                cum_ev_k_dict[head].append(cev_k)
+                cum_ev_kv_sep_dict[head].append(((np.array(cev_k) + np.array(cev_v)) / 2.0).tolist())
+                cum_ev_kv_joint_dict[head].append(cev_joint)
+                cum_ev_v_dict[head].append(cev_v)
 
-            true_attn_values = get_true_attention_values(query_head, key_head, value_head)
-            # Fixed k sweep (figure 1): same k applied to all methods
-            for num_components in components_list:
-                _, attn_values_k = method_1(key_head, query_head, value_head, k=num_components)
-                _, _, attn_values_kv_sep = method_2(key_head, query_head, value_head, k=num_components)
-                _, _, attn_values_kv_joint = method_3(key_head, query_head, value_head, k=num_components)
-                _, attn_values_v = method_4(key_head, query_head, value_head, k=num_components)
+                true_attn_values = get_true_attention_values(query_head, key_head, value_head)
+                
+                # Fixed k sweep (figure 1): same k applied to all methods
+                for num_components in components_list:
+                    _, attn_values_k = method_1(key_head, query_head, value_head, k=num_components)
+                    _, _, attn_values_kv_sep = method_2(key_head, query_head, value_head, k=num_components)
+                    _, _, attn_values_kv_joint = method_3(key_head, query_head, value_head, k=num_components)
+                    _, attn_values_v = method_4(key_head, query_head, value_head, k=num_components)
 
-                rmse_k_dict[head][page].append(torch.mean((true_attn_values - attn_values_k) ** 2).sqrt().item())
-                rmse_kv_sep_dict[head][page].append(torch.mean((true_attn_values - attn_values_kv_sep) ** 2).sqrt().item())
-                rmse_kv_joint_dict[head][page].append(torch.mean((true_attn_values - attn_values_kv_joint) ** 2).sqrt().item())
-                rmse_v_dict[head][page].append(torch.mean((true_attn_values - attn_values_v) ** 2).sqrt().item())
+                    rmse_k_dict[head][(company, page)].append(torch.mean((true_attn_values - attn_values_k) ** 2).sqrt().item())
+                    rmse_kv_sep_dict[head][(company, page)].append(torch.mean((true_attn_values - attn_values_kv_sep) ** 2).sqrt().item())
+                    rmse_kv_joint_dict[head][(company, page)].append(torch.mean((true_attn_values - attn_values_kv_joint) ** 2).sqrt().item())
+                    rmse_v_dict[head][(company, page)].append(torch.mean((true_attn_values - attn_values_v) ** 2).sqrt().item())
+
+        print(f"Done: {company}")
 
     heads = sorted(rmse_k_dict.keys())
     num_heads = len(heads)
@@ -169,7 +165,7 @@ def pca_analysis(num_tokens, layer_idx, path):
         axes1 = axes1.reshape(1, -1)
 
     for row_idx, head in enumerate(heads):
-        # Average RMSE across pages for this head
+        # Average RMSE across all (company, page) prompts for this head
         m1_avg = np.mean(np.array(list(rmse_k_dict[head].values())), axis=0).tolist()
         m4_avg = np.mean(np.array(list(rmse_v_dict[head].values())), axis=0).tolist()
         m2_avg = np.mean(np.array(list(rmse_kv_sep_dict[head].values())), axis=0).tolist()
@@ -202,7 +198,8 @@ def pca_analysis(num_tokens, layer_idx, path):
         _plot_explained_var_ratio(axes1[row_idx, 6], components_list, ev2_avg, cev2_avg, f'Expl. Var Ratio - Method 2 (K & V sep) - Head {head}',   's', 'tab:green',  ylim=ev_ylim)
         _plot_explained_var_ratio(axes1[row_idx, 7], components_list, ev3_avg, cev3_avg, f'Expl. Var Ratio - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue',   ylim=ev_ylim)
 
-    fig1.suptitle(f'PCA Analysis (k sweep) - Layer {layer_idx} - Averaged Across Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
+    n_pages = len(companies) * len(pages)
+    fig1.suptitle(f'PCA Analysis (k sweep) - Layer {layer_idx} - Averaged Across {n_pages} Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
     fig1.tight_layout(rect=[0, 0, 1, 0.96])
     fig1.savefig(f'reports/figures/PCA/pca_k_sweep_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
     plt.close(fig1)
@@ -213,10 +210,10 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
-    path = "document-haystack/APA/APA_25Pages/Text_TextNeedles/APA_25Pages_TextNeedles_page"
 
-    # --------------- PCA analysis ---------------
-    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx, path=path)
+    # --------------- PCA analysis across companies ---------------
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
+    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx, companies=companies)
