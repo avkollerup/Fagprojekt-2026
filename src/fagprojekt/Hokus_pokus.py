@@ -312,13 +312,13 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
             torch.cuda.empty_cache()
 
     
-    # now we should compute the average mse for each k over folds
+    # now we should compute the average rmse for each k over folds
     for k_val in k_values:
         mses[k_val] = sum(mses[k_val])/folds
     plt.plot(k_values,list(mses.values()),'o-')
-    plt.title('MSE error on test set over k values')
+    plt.title('RMSE error on test set over k values')
     plt.xlabel('K')
-    plt.ylabel('MSE error on attention')
+    plt.ylabel('RMSE error on attention')
     plt.savefig('reports/figures/hokus_pokus_k_analysis_CV.png')
 
     return mses
