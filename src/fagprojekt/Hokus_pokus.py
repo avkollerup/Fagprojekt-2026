@@ -7,6 +7,7 @@ print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
 print(f"Available GPUs: {torch.cuda.device_count()}")
 print(f"Current device: {torch.cuda.current_device()}")
 import torch.nn as nn
+import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -304,7 +305,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
             # Load and compare model   
             with torch.no_grad():
                 mse,frob,cos = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
-            mses[k_val].append(mse)
+            mses[k_val].append(np.sqrt(mse))
             
             # cleanup
             del g_theta
