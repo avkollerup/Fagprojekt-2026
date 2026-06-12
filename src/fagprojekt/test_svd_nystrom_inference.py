@@ -14,6 +14,7 @@ If it does not crash, the insertion path basically works.
 
 def sample_next_token(logits):
     return torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
+# Sample fra multinomial distribution (sample fra top 50)
 
 
 def main():
