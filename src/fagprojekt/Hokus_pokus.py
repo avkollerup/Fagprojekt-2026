@@ -172,7 +172,7 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
         plt.plot(train_loss, linewidth=2)
         plt.title("Hokus Pokus Training Loss")
         plt.xlabel("Step")
-        plt.ylabel("1 - Cosine Similarity")
+        plt.ylabel("1 - Cosine Similarity" if loss_method == "cosine" else "MSE Loss")
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(output_path, dpi=150)
@@ -335,7 +335,7 @@ def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head
     print(f"Training with loss method: {loss_method}")
     
     # Train model on the training paths
-    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=False)
+    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True)
 
     # Save model
     model_path = f"models/g_theta_weights_{method}.pth"
