@@ -43,6 +43,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
 
     for name, rmse in all_rmse.items():
         print(f"{name}: mean RMSE={np.mean(rmse):.6e}, std={np.std(rmse):.6e}")
+        print()
 
     pairs = list(itertools.combinations(all_rmse.keys(), 2))
     stats = [wilcoxon(all_rmse[a], all_rmse[b]) for a, b in pairs]
@@ -79,6 +80,7 @@ if __name__ == "__main__":
     method_4: mean RMSE=1.353081e-02, std=1.629130e-03
     Hokus Pokus: mean RMSE=7.843776e-01, std=1.110772e-01
     K-means: mean RMSE=8.498689e-02, std=9.139702e-03
+
     method_1 vs method_2: p_raw=3.3698e-06, p_adj=5.0547e-05, reject H0=True
     method_1 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
     method_1 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
