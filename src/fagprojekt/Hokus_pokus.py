@@ -10,6 +10,7 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+import math
 
 from fagprojekt.SVD import decompose_K, compare_attention
 from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
@@ -194,7 +195,7 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
     Returns:
         The comparison output tensor.
     """
-    mse_errors=[]
+    rmse_errors=[]
     frob_norm_errors=[]
     cosine_errors=[]
 
@@ -253,18 +254,18 @@ def compare_hokus_pokus(paths, method, model_path=None, loaded_g_theta=None, mod
 
         mse,frob,cos = compare_attention(true_attn, final_attn, "Hokus Pokus vs true_attn",want_print=False)
         # append errors to lists for later analysis
-        mse_errors.append(mse)
+        rmse_errors.append(math.sqrt(mse))
         frob_norm_errors.append(frob)
         cosine_errors.append(cos)
 
         del key_head, value_head, query_head, true_attn, final_attn
         torch.cuda.empty_cache()
     # after loop, compute average errors
-    avg_mse = sum(mse_errors) / len(mse_errors)
+    avg_rmse = sum(rmse_errors) / len(rmse_errors)
     avg_frob = sum(frob_norm_errors) / len(frob_norm_errors)
     avg_cos = sum(cosine_errors) / len(cosine_errors)
 
-    return (avg_mse, avg_frob, avg_cos)
+    return (avg_rmse, avg_frob, avg_cos, rmse_errors)
 
  
 def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer_idx=0,head_idx=0,num_tokens=200,method = 'mse'):
@@ -304,7 +305,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
 
             # Load and compare model   
             with torch.no_grad():
-                mse,frob,cos = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
+                mse,frob,cos,_ = compare_hokus_pokus(paths=test_paths, method='mlp', loaded_g_theta=g_theta, k=k_val,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
             mses[k_val].append(np.sqrt(mse))
             
             # cleanup
@@ -323,49 +324,32 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
 
     return mses
 
-def test_loss_methods(model,tokenizer,num_tokens,layer_idx,head_idx,k):
+def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head_idx, k, train_companies, test_companies):
     # --------------- TRAINING AND TEST PATHS ---------------
-    # create list of paths for training
-    base_dir = Path("document-haystack/AIG/AIG_25Pages/Text_TextNeedles")
-    paths = list(base_dir.glob("*.txt"))
-    paths = [str(p) for p in paths]
+    train_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in train_companies for page in range(1,26)]
+    test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in test_companies for page in range(1,26)]
 
-    # test paths which are unseen during training
-    test_dir = Path("document-haystack/AmericanAirlines/AmericanAirlines_10Pages/Text_TextNeedles")
-    test_paths = list(test_dir.glob("*.txt"))
-    test_paths = [str(p) for p in test_paths]
-
-
-    # define method
     method = "mlp"
+    loss_method = 'mse'
 
-    # if we just use the identity method, there is no need for training
-    if method == "identity":
-        compare_hokus_pokus(paths=test_paths, method=method, model_path=None, k=k,tokens=num_tokens)
+    print(f"Training with loss method: {loss_method}")
+    
+    # Train model on the training paths
+    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=False)
 
-    else:
-        # compute for all types of loss methods
-        for loss_method in ['mse']:#, 'cosine']:
-            print(f"Training with loss method: {loss_method}")
-            
-            # Train model on the training paths
-            g_theta = train(paths, method=method,layer_idx=layer_idx,head_idx=head_idx,k=k,model=model,tokenizer=tokenizer,loss_method=loss_method,tokens=num_tokens,plot_figure=False)
+    # Save model
+    model_path = f"models/g_theta_weights_{method}.pth"
+    torch.save(g_theta.state_dict(), model_path)
 
-            # Save model
-            model_path = f"models/g_theta_weights_{method}.pth"
-            torch.save(g_theta.state_dict(), model_path)
+    # load the g_theta model weights only once
+    g_theta_loaded = build_mlp(k).to(next(g_theta.parameters()).device)
+    g_theta_loaded.load_state_dict(torch.load(model_path, map_location=next(g_theta.parameters()).device))
+    g_theta_loaded.eval()
 
-            # load the g_theta model weights only once
-            g_theta_loaded = build_mlp(k).to(next(g_theta.parameters()).device)
-            g_theta_loaded.load_state_dict(torch.load(model_path, map_location=next(g_theta.parameters()).device))
-            g_theta_loaded.eval()
+    # Load and compare model
+    _, _, _, rmse_per_page = compare_hokus_pokus(paths=test_paths, method=method, model_path=model_path, loaded_g_theta=g_theta_loaded, k=k, layer_idx=layer_idx, head_idx=head_idx, tokens=num_tokens, model=model, tokenizer=tokenizer)
+    return rmse_per_page
 
-            # Load and compare model   
-            mse,frob,cos = compare_hokus_pokus(paths=test_paths, method=method, model_path=model_path, loaded_g_theta=g_theta_loaded, k=k,layer_idx=layer_idx, head_idx=head_idx,tokens=num_tokens,model=model, tokenizer=tokenizer)
-            print(f"Final comparison for loss_method={loss_method}:")
-            print(f"  Average MSE: {mse:.6e}")
-            print(f"  Average Relative Frobenius error: {frob:.6e}")
-            print(f"  Average Cosine similarity: {cos:.6f}\n")
 
 
 if __name__ == "__main__":

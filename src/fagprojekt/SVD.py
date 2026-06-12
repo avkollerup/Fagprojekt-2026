@@ -135,12 +135,11 @@ def get_rmse(key_head, query_head, value_head, k_per_method):
 
     return all_results
 
-def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, companies):
+def get_rmse_companies_SVD(model, tokenizer, layer_idx, head_idx, num_tokens, thresholds_per_method, companies, path_suffix, want_plot=False):
     import pandas as pd
     import matplotlib.pyplot as plt
 
     rows = []
-    model,tokenizer = load_model()
 
     pages = range(1, 26)
     for company in companies:
@@ -158,101 +157,102 @@ def get_results_k(layer_idx, head_idx, num_tokens, thresholds_per_method, compan
 
     df = pd.DataFrame(rows)
 
-    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}"
+    tag = f"layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}{path_suffix}"
 
     # Save full per-prompt results
-    df.to_csv(f"reports/figures/SVD/k_tuning_all_{tag}_test.csv", index=False)
-    print(f"Saved: reports/figures/SVD/k_tuning_all_{tag}_test.csv")
+    df.to_csv(f"reports/figures/SVD/k_tuning_all_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_all_{tag}.csv")
 
     # Save per-k stats across prompts
     stats_df = df.groupby(["method", "k"])["rmse"].agg(["mean", "std", "min", "max"]).reset_index()
-    stats_df.to_csv(f"reports/figures/SVD/k_tuning_all_stats_{tag}_test.csv", index=False)
-    print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}_test.csv")
+    stats_df.to_csv(f"reports/figures/SVD/k_tuning_all_stats_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_all_stats_{tag}.csv")
 
     # Save best (lowest mean rmse) per method across all ks
     best_df = stats_df.loc[stats_df.groupby("method")["mean"].idxmin(), ["method", "k", "mean"]].rename(columns={"mean": "min_mean_rmse"}).reset_index(drop=True)
-    best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}_test.csv", index=False)
-    print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}_test.csv")
+    best_df.to_csv(f"reports/figures/SVD/k_tuning_best_{tag}.csv", index=False)
+    print(f"Saved: reports/figures/SVD/k_tuning_best_{tag}.csv")
 
     n_prompts = len(df) // len(df["method"].unique()) // len(df["k"].unique())
 
-    # Plot RMSE vs k with spread across prompts
-    methods = df["method"].unique()
-    fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
-    for ax, method in zip(axes, methods):
-        m = stats_df[stats_df["method"] == method].sort_values("k")
-        raw = df[df["method"] == method].sort_values("k")
-        ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-        ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
-        ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+    if want_plot:
+        # Plot RMSE vs k with spread across prompts
+        methods = df["method"].unique()
+        fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
+        for ax, method in zip(axes, methods):
+            m = stats_df[stats_df["method"] == method].sort_values("k")
+            raw = df[df["method"] == method].sort_values("k")
+            ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
 
-        # Elbow: exclude near-zero plateau, normalize to [0,1], find where slope first rises above -1
-        ks = m["k"].values.astype(float)
-        means = m["mean"].values.astype(float)
-        valid = means > means.max() * 0.01
-        ks_v, means_v = ks[valid], means[valid]
-        if len(ks_v) > 1:
-            k_range = ks_v.max() - ks_v.min()
-            r_range = means_v.max() - means_v.min()
-            if k_range > 0 and r_range > 0:
-                k_norm = (ks_v - ks_v.min()) / k_range
-                r_norm = (means_v - means_v.min()) / r_range
-                slopes_norm = np.diff(r_norm) / np.diff(k_norm)
-                cross_idx = np.where(slopes_norm >= -1)[0]
+            # Elbow: exclude near-zero plateau, normalize to [0,1], find where slope first rises above -1
+            ks = m["k"].values.astype(float)
+            means = m["mean"].values.astype(float)
+            valid = means > means.max() * 0.01
+            ks_v, means_v = ks[valid], means[valid]
+            if len(ks_v) > 1:
+                k_range = ks_v.max() - ks_v.min()
+                r_range = means_v.max() - means_v.min()
+                if k_range > 0 and r_range > 0:
+                    k_norm = (ks_v - ks_v.min()) / k_range
+                    r_norm = (means_v - means_v.min()) / r_range
+                    slopes_norm = np.diff(r_norm) / np.diff(k_norm)
+                    cross_idx = np.where(slopes_norm >= -1)[0]
+                    if len(cross_idx) > 0:
+                        k_cross = int(ks_v[cross_idx[0]])
+                        ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
+
+            ax.set_xlabel("k")
+            ax.legend(fontsize=7)
+            ax.tick_params(labelleft=True)
+            ax.set_title(method, fontsize=9, fontweight="bold")
+            ax.set_ylabel("RMSE")
+            ax.grid(True, alpha=0.3)
+        fig.suptitle(f"RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+        fig.tight_layout()
+        dist_path = f"reports/figures/SVD/k_distribution_{tag}.pdf"
+        fig.savefig(dist_path, dpi=150)
+        plt.close(fig)
+        print(f"Saved: {dist_path}")
+
+        # Plot cosine similarity vs k with spread across prompts
+        cos_stats_df = df.groupby(["method", "k"])["cos_sim"].agg(["mean", "std"]).reset_index()
+        fig2, axes2 = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
+        for ax, method in zip(axes2, methods):
+            m = cos_stats_df[cos_stats_df["method"] == method].sort_values("k")
+            raw = df[df["method"] == method].sort_values("k")
+            ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+
+            # Elbow: normalize to [0,1], find where slope first drops below +1
+            ks = m["k"].values.astype(float)
+            means = m["mean"].values.astype(float)
+            k_range = ks.max() - ks.min()
+            c_range = means.max() - means.min()
+            if len(ks) > 1 and k_range > 0 and c_range > 0:
+                # xnormalized = (x - xminimum) / range of x
+                k_norm = (ks - ks.min()) / k_range
+                c_norm = (means - means.min()) / c_range
+                slopes_norm = np.diff(c_norm) / np.diff(k_norm)
+                cross_idx = np.where(slopes_norm < 1)[0]
                 if len(cross_idx) > 0:
-                    k_cross = int(ks_v[cross_idx[0]])
+                    k_cross = int(ks[cross_idx[0]])
                     ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
 
-        ax.set_xlabel("k")
-        ax.legend(fontsize=7)
-        ax.tick_params(labelleft=True)
-        ax.set_title(method, fontsize=9, fontweight="bold")
-        ax.set_ylabel("RMSE")
-        ax.grid(True, alpha=0.3)
-    fig.suptitle(f"RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
-    fig.tight_layout()
-    dist_path = f"reports/figures/SVD/k_distribution_{tag}_test.pdf"
-    fig.savefig(dist_path, dpi=150)
-    plt.close(fig)
-    print(f"Saved: {dist_path}")
-
-    # Plot cosine similarity vs k with spread across prompts
-    cos_stats_df = df.groupby(["method", "k"])["cos_sim"].agg(["mean", "std"]).reset_index()
-    fig2, axes2 = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
-    for ax, method in zip(axes2, methods):
-        m = cos_stats_df[cos_stats_df["method"] == method].sort_values("k")
-        raw = df[df["method"] == method].sort_values("k")
-        ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-        ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
-        ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
-
-        # Elbow: normalize to [0,1], find where slope first drops below +1
-        ks = m["k"].values.astype(float)
-        means = m["mean"].values.astype(float)
-        k_range = ks.max() - ks.min()
-        c_range = means.max() - means.min()
-        if len(ks) > 1 and k_range > 0 and c_range > 0:
-            # xnormalized = (x - xminimum) / range of x
-            k_norm = (ks - ks.min()) / k_range
-            c_norm = (means - means.min()) / c_range
-            slopes_norm = np.diff(c_norm) / np.diff(k_norm)
-            cross_idx = np.where(slopes_norm < 1)[0]
-            if len(cross_idx) > 0:
-                k_cross = int(ks[cross_idx[0]])
-                ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
-
-        ax.set_xlabel("k")
-        ax.legend(fontsize=7)
-        ax.tick_params(labelleft=True)
-        ax.set_title(method, fontsize=9, fontweight="bold")
-        ax.set_ylabel("Cosine similarity")
-        ax.grid(True, alpha=0.3)
-    fig2.suptitle(f"Cosine similarity vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
-    fig2.tight_layout()
-    cos_path = f"reports/figures/SVD/k_cosine_{tag}_test.pdf"
-    fig2.savefig(cos_path, dpi=150)
-    plt.close(fig2)
-    print(f"Saved: {cos_path}")
+            ax.set_xlabel("k")
+            ax.legend(fontsize=7)
+            ax.tick_params(labelleft=True)
+            ax.set_title(method, fontsize=9, fontweight="bold")
+            ax.set_ylabel("Cosine similarity")
+            ax.grid(True, alpha=0.3)
+        fig2.suptitle(f"Cosine similarity vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+        fig2.tight_layout()
+        cos_path = f"reports/figures/SVD/k_cosine_{tag}.pdf"
+        fig2.savefig(cos_path, dpi=150)
+        plt.close(fig2)
+        print(f"Saved: {cos_path}")
 
 
 def compare_attention(true_attn, approx_attn, name, want_print=True):
@@ -278,20 +278,19 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
     head_idx   = int(os.environ["HEAD_IDX"])
+
+    model, tokenizer = load_model()
 
     all_methods = ['method_1', 'method_2', 'method_3', 'method_4']
 
     # Finding best k
     k_list = np.linspace(1, 150, 50, dtype=int).tolist()
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
-    # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, companies)
+    get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method={m: k_list for m in all_methods}, companies=companies, path_suffix="", want_plot=True)
 
-    # Testing given best k — averaged across multiple companies
-    best_k = {"method_1":[34,45,63], "method_2": [22,45,75], "method_3": [25,45,69], "method_4": [22,45,63]}
-    companies = ['JPMorgan','Kroger','NewRiver','PNC','Reach','Sagicor','United','UPS','Vesuvius']
-    get_results_k(layer_idx, head_idx, num_tokens, best_k, companies)
+
