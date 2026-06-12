@@ -46,6 +46,7 @@ class SVDNystromLlamaAttention(nn.Module):
         self.lamba = lamba
         self.svd_mode = svd_mode
         self.prefill = False
+        self.attention_matrices = []
         self.clear()
 
     def clear(self) -> None:
@@ -81,6 +82,8 @@ class SVDNystromLlamaAttention(nn.Module):
         else:
             scores = scores + attention_mask
         weights = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
+        self.prefix_attention_scores = scores.detach().cpu()
+        self.prefix_attention_weights = weights.detach().cpu()
         return torch.matmul(weights, v)
 
     def top_right_singular_vectors(self, x):
@@ -124,6 +127,7 @@ class SVDNystromLlamaAttention(nn.Module):
 
         # Saves as class variables
         self.B = B.to(k.dtype)
+        self.global_basis_to_prompt = torch.linalg.solve(M, R)
         self.const_cache = torch.linalg.solve(M, R @ v.float()).to(v.dtype)
 
     def local_attention(self, q, k, v):
@@ -161,17 +165,22 @@ class SVDNystromLlamaAttention(nn.Module):
             allowed = allowed & ((current_token_positions.view(-1, 1) - cache_token_positions.view(1, -1)) < self.local_window)
 
         mask = allowed.view(1, 1, q_len, K.shape[-2])
-        return F.scaled_dot_product_attention(q, K, V, attn_mask=mask, dropout_p=0.0, scale=self.scaling) # llamas attention scaling: self.scaling = 1 / sqrt(head_dim)
+        scores = torch.matmul(q, K.transpose(-2, -1)) * self.scaling
+        scores = scores.masked_fill(~mask, float("-inf"))
+        weights = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
+        return F.scaled_dot_product_attention(q, K, V, attn_mask=mask, dropout_p=0.0, scale=self.scaling), scores, cache_token_positions # llamas attention scaling: self.scaling = 1 / sqrt(head_dim)
 
     def global_attention(self, q):
         """Approximate long-range attention through the cached prompt.
 
         The completed function maps current query tokens into the cached
-        landmark space and reads from the fixed prompt value table. It does not
-        inspect generated-token K/V state. The output shape matches q.
+        landmark space and reads from the fixed prompt value table. It also
+        reconstructs approximate prompt-token attention scores before softmax.
         """
-        weights = F.softmax(q @ self.B * self.scaling, dim=-1, dtype=torch.float32)
-        return torch.matmul(weights.to(q.dtype), self.const_cache)
+        basis_scores = q @ self.B * self.scaling
+        basis_weights = F.softmax(basis_scores, dim=-1, dtype=torch.float32)
+        token_scores = torch.matmul(basis_scores, self.global_basis_to_prompt.to(basis_scores.dtype))
+        return torch.matmul(basis_weights.to(q.dtype), self.const_cache), basis_scores, token_scores
 
     def append_target_kv(self, k, v):
         self.target_k = k if self.target_k is None else torch.cat([self.target_k, k], dim=-2)
@@ -195,8 +204,8 @@ class SVDNystromLlamaAttention(nn.Module):
             out = self.dense_causal_attention(q, k, v, attention_mask)
             
         else:
-            local_out = self.local_attention(q, k, v)
-            global_out = self.global_attention(q)
+            local_out, local_scores, local_positions = self.local_attention(q, k, v)
+            global_out, global_basis_scores, global_token_scores = self.global_attention(q)
 
             if self.layer_idx == 5:
                 print("\n--- ATTENTION MIX DEBUG ---")
@@ -207,6 +216,8 @@ class SVDNystromLlamaAttention(nn.Module):
                 print(f"global/local ratio: {global_out.float().norm().item() / (local_out.float().norm().item() + 1e-8)}")
 
             out = self.lamba * global_out + (1 - self.lamba) * local_out
+            if self.layer_idx == 5:
+                self.attention_matrices.append((local_scores.detach().cpu(), global_token_scores.detach().cpu(),local_positions.detach().cpu()))
             self.append_target_kv(k, v)
 
         out = out.transpose(1, 2).reshape(*shape, -1).contiguous()
@@ -251,3 +262,56 @@ def clear_nystrom(model):
     for module in model.modules():
         if isinstance(module, SVDNystromLlamaAttention):
             module.clear()
+
+import torch
+
+def build_full_attention_matrix(module, average_heads=True, apply_softmax=True):
+    """
+    Reconstructs a full [tokens x tokens] attention matrix
+    from a SVDNystromLlamaAttention module.
+
+    Args:
+        module: one SVDNystromLlamaAttention instance
+        average_heads: whether to average over heads
+        apply_softmax: convert scores to probabilities
+
+    Returns:
+        attention matrix [tokens, tokens]
+    """
+
+    prefix_len = module.prefix_len
+    steps = module.attention_matrices
+
+    rows = []
+
+    for t, (local_scores, global_scores, local_pos) in enumerate(steps):
+        # shapes
+        # local_scores: [1, heads, 1, K_local]
+        # global_scores: [1, heads, 1, prefix_len]
+
+        heads = local_scores.shape[1]
+        total_len = prefix_len + t + 1
+
+        # initialize full row
+        row = torch.full((heads, total_len), float("-inf"))
+
+        # ---- global (prompt tokens) ----
+        row[:, :prefix_len] = global_scores[0, :, 0, :]
+
+        # ---- local overwrite ----
+        row[:, local_pos] = local_scores[0, :, 0, :]
+
+        rows.append(row)
+
+    # stack rows → [heads, tokens, tokens]
+    attn = torch.stack(rows, dim=1)
+
+    # optional softmax
+    if apply_softmax:
+        attn = torch.softmax(attn, dim=-1)
+
+    # average heads
+    if average_heads:
+        attn = attn.mean(dim=0)
+
+    return attn

@@ -1,8 +1,9 @@
 import torch
-
+import seaborn as sns
+import numpy as np
 from fagprojekt.model import (load_model, get_messages)
 from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom)
-
+import matplotlib.pyplot as plt
 
 """
 Simple test of SVD-Nystrom attention.
@@ -23,6 +24,8 @@ def main():
     model.eval()
 
     layer_idx = 5
+    head_idx = 0
+    lamba = 0.01
 
     patch_llama_attention(
         model=model,
@@ -30,7 +33,7 @@ def main():
         rank=60,
         local_window=128,
         eps=1e-4,
-        lamba=0.01,
+        lamba=lamba,
         svd_mode="svd_k")
 
     clear_nystrom(model)
@@ -78,8 +81,57 @@ def main():
 
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
 
+    seq_len = input_ids.shape[-1]
+    print("Length of input tokens:", seq_len)
     print("\n--- MODEL OUTPUT ---")
     print(tokenizer.decode(generated_ids[0], skip_special_tokens=True))
+
+    print("\n--- ATTENTION MATRICES ---")
+
+    # rows = []
+
+    # attn_module = model.model.layers[layer_idx].self_attn
+    # for t, (local_scores, global_scores, local_pos) in enumerate(attn_module.attention_matrices):
+
+    #     total_len = seq_len + t + 1
+    #     row = torch.full((32, total_len), float("-inf"))
+
+    #     # Global (prompt)
+    #     row[:, :seq_len] = global_scores[0, :, 0, :]
+
+    #     # Local (overwrite)
+    #     row[:, local_pos] = local_scores[0, :, 0, :]
+
+    #     rows.append(row)
+
+    # # Stack into matrix
+    # attn_matrix = torch.stack(rows, dim=1)  # or stack per token
+
+    # prefill_matrix = model.model.layers[layer_idx].self_attn.prefix_attention_scores
+    # prefill_matrix = prefill_matrix[0, head_idx]  # Take the first batch and specified head
+    
+    # big_attention_matrix = np.zeros((seq_len + len(generated), seq_len + len(generated)), dtype=np.float32)
+    # # insert the prefill block using raw scores before softmax
+    # #big_attention_matrix[:prefill_matrix.shape[0], :prefill_matrix.shape[1]] = prefill_matrix.cpu().to(torch.float32).numpy()
+
+    # # insert the global and local attention matrices for generated tokens
+    # attn_module = model.model.layers[layer_idx].self_attn
+    # for i in range(len(attn_module.attention_matrices)):
+    #     local_attn, global_attn = attn_module.attention_matrices[i]
+    #     global_slice = global_attn[0, head_idx].cpu().to(torch.float32).numpy()
+    #     local_slice = local_attn[0, head_idx].cpu().to(torch.float32).numpy()
+    #     row_index = seq_len + i
+    #     # global attention covers prompt tokens only
+    #     big_attention_matrix[row_index, : global_slice.shape[-1]] = global_slice
+    #     # local attention covers prompt + generated keys in order, so align at column 0
+    #     big_attention_matrix[row_index, : local_slice.shape[-1]] += local_slice.squeeze() * (1 - lamba)
+
+    #print(big_attention_matrix.max())
+    sns.heatmap(attn_matrix, cmap='vlag', cbar=True)
+    plt.savefig("reports/figures/attention_heatmap.png")
+    print("Saved heatmap")
+
+        
 
 if __name__ == "__main__":
     main()
