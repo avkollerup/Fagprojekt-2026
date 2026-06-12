@@ -69,3 +69,29 @@ if __name__ == "__main__":
     test_companies  = sorted(['AIG', 'AmericanAirlines', 'APA'])
 
     run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies)
+
+
+    # First try - 1 Pass over training data to train g
+    """
+    method_1: mean RMSE=1.909066e-02, std=2.825224e-03
+    method_2: mean RMSE=1.815607e-02, std=2.605675e-03
+    method_3: mean RMSE=2.615147e-02, std=3.296686e-03
+    method_4: mean RMSE=1.353081e-02, std=1.629130e-03
+    Hokus Pokus: mean RMSE=7.843776e-01, std=1.110772e-01
+    K-means: mean RMSE=8.498689e-02, std=9.139702e-03
+    method_1 vs method_2: p_raw=3.3698e-06, p_adj=5.0547e-05, reject H0=True
+    method_1 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_1 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_1 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_1 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_2 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_2 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_2 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_2 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_3 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_3 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_3 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_4 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    method_4 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+    """
