@@ -3,7 +3,6 @@ import torch
 from fagprojekt.model import (load_model, get_messages)
 from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom)
 
-
 """
 Simple test of SVD-Nystrom attention.
 
@@ -15,6 +14,7 @@ If it does not crash, the insertion path basically works.
 
 def sample_next_token(logits):
     return torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
+# Sample fra multinomial distribution (sample fra top 50)
 
 
 def main():
@@ -78,8 +78,10 @@ def main():
 
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
 
+
     print("\n--- MODEL OUTPUT ---")
     print(tokenizer.decode(generated_ids[0], skip_special_tokens=True))
 
 if __name__ == "__main__":
     main()
+
