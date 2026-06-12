@@ -10,10 +10,10 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from torch.profiler import ProfilerAction, profile
 from fagprojekt.SVD import decompose_K, compare_attention
 from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
-
+prof = profile()
 
 def build_mlp(k):
     """A small feed-forward network."""

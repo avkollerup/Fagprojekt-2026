@@ -2,6 +2,10 @@ import torch
 
 from fagprojekt.model import (load_model, get_messages)
 from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom)
+from torch.profiler import profile, ProfilerActivity, record_function
+
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True, acc_events=True) 
+
 
 
 """
@@ -19,6 +23,7 @@ def sample_next_token(logits):
 
 def main():
     print("running")
+    prof.start()
     model, tokenizer = load_model(want_print=True)
     model.eval()
 
@@ -56,30 +61,40 @@ def main():
 
     with torch.no_grad():
         # Prefill: build compressed prompt cache.
-        set_prefill(model, True)
+        
+        with record_function('Prefill'):
+            set_prefill(model, True)
 
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
 
         # First generated token.
-        next_token = sample_next_token(outputs.logits)
-        generated = [next_token]
+        with record_function('Token Generation'):
+            next_token = sample_next_token(outputs.logits)
+            generated = [next_token]
 
         # Decoding: use compressed prompt cache + local attention.
-        set_prefill(model, False)
+        with record_function('Decoding'):
+            set_prefill(model, False)
 
-        for _ in range(20):
-            outputs = model(input_ids=next_token, attention_mask=torch.ones_like(next_token), use_cache=False)
+            for _ in range(20):
+                outputs = model(input_ids=next_token, attention_mask=torch.ones_like(next_token), use_cache=False)
 
-            next_token = sample_next_token(outputs.logits)
-            generated.append(next_token)
+                next_token = sample_next_token(outputs.logits)
+                generated.append(next_token)
 
-            if next_token.item() == tokenizer.eos_token_id:
-                break
+                if next_token.item() == tokenizer.eos_token_id:
+                    break
 
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
+    torch.cuda.synchronize()
+    prof.step()
+    prof.stop()
 
     print("\n--- MODEL OUTPUT ---")
     print(tokenizer.decode(generated_ids[0], skip_special_tokens=True))
 
 if __name__ == "__main__":
     main()
+    with open("metrics.txt","a") as f:
+        f.write(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=20)+"\n" )
+    prof.export_chrome_trace("trace.json")
