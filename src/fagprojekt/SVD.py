@@ -278,7 +278,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
@@ -292,6 +292,6 @@ if __name__ == "__main__":
     # get_results_k(layer_idx, head_idx, num_tokens, {m: k_list for m in all_methods}, companies)
 
     # Testing given best k — averaged across multiple companies
-    best_k = {"method_1":[15,34,63], "method_2": [15,22,75], "method_3": [15,25,69], "method_4": [15,22,63]}
+    best_k = {"method_1":[34,45,63], "method_2": [22,45,75], "method_3": [25,45,69], "method_4": [22,45,63]}
     companies = ['JPMorgan','Kroger','NewRiver','PNC','Reach','Sagicor','United','UPS','Vesuvius']
     get_results_k(layer_idx, head_idx, num_tokens, best_k, companies)
