@@ -14,6 +14,7 @@ from torch.profiler import ProfilerAction, profile
 import math
 from fagprojekt.SVD import decompose_K, compare_attention
 from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
+import random
 
 prof = profile()
 
@@ -69,7 +70,7 @@ def hokus_pokus(query_head, value_head, key_head, k, method, g_theta):
     return transformed_input_data @ a_mat.T @ value_head
 
 
-def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine',plot_figure=True,model=None, tokenizer=None,tokens=100):
+def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_method='cosine',plot_figure=True,model=None, tokenizer=None,tokens=100, num_epochs=10):
     """Train g_theta to mimic the baseline approximation.
 
     Args:
@@ -99,75 +100,88 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
         loss_fn = torch.nn.MSELoss()
     
     train_loss = []
+    best_loss = float('inf')
+    best_state = None
+    patience = 10
+    epochs_without_improvement = 0
 
-    step=0
-    for path in paths:
+    for epoch in range(num_epochs):
+        random.shuffle(paths)
+        epoch_loss = []
+        for path in paths:
 
-        # get messages for path
-        messages, _, _ = get_messages(path, num_tokens=tokens)
+            # get messages for path
+            messages, _, _ = get_messages(path, num_tokens=tokens)
 
-        # Use no_grad to prevent graph tracking from model inference
-        with torch.no_grad():
-            key_head, value_head, query_head = get_kvq(
-                messages,
-                layer_idx=layer_idx,
-                head_idx=head_idx,
-                want_print=False,
-                model=model,
-                tokenizer=tokenizer,
+            # Use no_grad to prevent graph tracking from model inference
+            with torch.no_grad():
+                key_head, value_head, query_head = get_kvq(
+                    messages,
+                    layer_idx=layer_idx,
+                    head_idx=head_idx,
+                    want_print=False,
+                    model=model,
+                    tokenizer=tokenizer,
+                )
+
+            # Move extracted head tensors to CPU as early as possible to reduce GPU memory pressure.
+            key_head = key_head.cpu()
+            value_head = value_head.cpu()
+            query_head = query_head.cpu()
+            torch.cuda.empty_cache()
+
+            with torch.no_grad():
+                true_attn = get_true_attention_values(
+                    query_head=query_head,
+                    key_head=key_head,
+                    value_head=value_head,
+                ).detach()
+
+            y_pred = hokus_pokus(
+                query_head=query_head,
+                value_head=value_head,
+                key_head=key_head,
+                k=k,
+                method=method,
+                g_theta=g_theta,
             )
 
-        # Move extracted head tensors to CPU as early as possible to reduce GPU memory pressure.
-        key_head = key_head.cpu()
-        value_head = value_head.cpu()
-        query_head = query_head.cpu()
-        torch.cuda.empty_cache()
+            # compute loss based on method
+            if loss_method == 'cosine':
+                loss = loss_fn(y_pred.flatten(), true_attn.flatten(), torch.tensor(1, device=y_pred.device))
+            elif loss_method == 'mse':
+                loss = loss_fn(y_pred, true_attn)
 
-        with torch.no_grad():
-            true_attn = get_true_attention_values(
-                query_head=query_head,
-                key_head=key_head,
-                value_head=value_head,
-            ).detach()
+            epoch_loss.append(loss.clone().item())
+            train_loss.append(loss.clone().item())
 
-        y_pred = hokus_pokus(
-            query_head=query_head,
-            value_head=value_head,
-            key_head=key_head,
-            k=k,
-            method=method,
-            g_theta=g_theta,
-        )
+            # zero the gradients before backward pass
+            optimizer.zero_grad()
 
+            # step and backwardpass
+            loss.backward()
+            optimizer.step()
 
-        # compute loss based on method
-        if loss_method == 'cosine':
-            loss = loss_fn(y_pred.flatten(), true_attn.flatten(), torch.tensor(1, device=y_pred.device))
-        elif loss_method == 'mse':
-            loss = loss_fn(y_pred, true_attn)
-        # elif loss_method == 'cosine_manual':
-        #     cos_sim = torch.nn.functional.cosine_similarity(
-        #         true_attn.flatten(),y_pred.flatten(), dim=0)
-        #     loss = 1 - cos_sim  # Minimize this to maximize similarity
-        train_loss.append(loss.clone().item())
-        
-        # zero the gradients before backward pass
-        optimizer.zero_grad()
+            del key_head, value_head, query_head, true_attn, y_pred
+            torch.cuda.empty_cache()
 
-        # step and backwardpass
-        loss.backward()
-        optimizer.step()
+        mean_epoch_loss = np.mean(epoch_loss)
+        print(f"Epoch {epoch+1}/{num_epochs}, mean loss={mean_epoch_loss:.6e}")
 
-        if step % 5 == 0:
-            print(f"step={step} loss={train_loss[-1]:.6e}")
-        step += 1
-
-        del key_head, value_head, query_head, true_attn, y_pred
-        torch.cuda.empty_cache()
+        if mean_epoch_loss < best_loss:
+            best_loss = mean_epoch_loss
+            best_state = {k: v.clone() for k, v in g_theta.state_dict().items()}
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
+            if epochs_without_improvement >= patience:
+                print(f"Early stopping at epoch {epoch+1} (no improvement for {patience} epochs)")
+                g_theta.load_state_dict(best_state)
+                break
 
     # Plotting
     if plot_figure:
-        output_path = f"reports/figures/hokus_pokus_train_loss_{method}_k_{k}.png"
+        output_path = f"reports/figures/hokus_pokus_train_loss_{method}_k_{k}_epochs_{num_epochs}.png"
 
         plt.figure(figsize=(8, 4))
         plt.plot(train_loss, linewidth=2)
@@ -325,7 +339,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
 
     return mses
 
-def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head_idx, k, train_companies, test_companies):
+def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head_idx, k, train_companies, test_companies, num_epochs):
     # --------------- TRAINING AND TEST PATHS ---------------
     train_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in train_companies for page in range(1,26)]
     test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in test_companies for page in range(1,26)]
@@ -336,10 +350,10 @@ def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head
     print(f"Training with loss method: {loss_method}")
     
     # Train model on the training paths
-    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True)
+    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True, num_epochs=num_epochs)
 
     # Save model
-    model_path = f"models/g_theta_weights_{method}.pth"
+    model_path = f"models/g_theta_weights_{method}_k_{k}_epochs_{num_epochs}.pth"
     torch.save(g_theta.state_dict(), model_path)
 
     # load the g_theta model weights only once

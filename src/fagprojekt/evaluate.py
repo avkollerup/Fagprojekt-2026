@@ -10,7 +10,7 @@ from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
 
 
-def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies):
+def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs):
     # ------ SVD ------
     best_k_sweep = {"method_1": [37, 45, 63], "method_2": [22, 45, 75], "method_3": [25, 45, 69], "method_4": [22, 45, 63]}
     get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method=best_k_sweep, companies=test_companies, path_suffix="_test", want_plot=False)
@@ -25,7 +25,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
 
     # ------ Hokus Pokus ------
     k_hp = 45
-    rmse_Hokus_pokus = get_rmse_companies_Hokus_Pokus(model=model, tokenizer=tokenizer, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k_hp, train_companies=train_companies, test_companies=test_companies)
+    rmse_Hokus_pokus = get_rmse_companies_Hokus_Pokus(model=model, tokenizer=tokenizer, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k_hp, train_companies=train_companies, test_companies=test_companies, num_epochs=num_epochs)
 
     # ------ K-means ------
     clusters = 8
@@ -63,16 +63,18 @@ if __name__ == "__main__":
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])
-
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    num_epochs = 100
+    
     model, tokenizer = load_model(want_print=False)
 
     train_companies = sorted(['GoldmanSachs', 'HSBC', 'JPMorgan', 'Kroger', 'NewRiver', 'PNC', 'Reach', 'Sagicor', 'United', 'UPS', 'Vesuvius', 'WoltersKluwer'])
     test_companies  = sorted(['AIG', 'AmericanAirlines', 'APA'])
 
-    run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies)
+    run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs)
 
 
-    # First try - 1 Pass over training data to train g
+    # First try - 1 Pass over training data to train g (1 epoch)
     """
     method_1: mean RMSE=1.909066e-02, std=2.825224e-03
     method_2: mean RMSE=1.815607e-02, std=2.605675e-03
