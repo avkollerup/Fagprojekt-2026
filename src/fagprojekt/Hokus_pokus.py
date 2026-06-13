@@ -179,6 +179,10 @@ def train(paths, method="mlp", lr = 1e-3, k = 50, layer_idx=0, head_idx=0,loss_m
                 g_theta.load_state_dict(best_state)
                 break
 
+    # Restore best weights even if early stopping never triggered
+    if best_state is not None:
+        g_theta.load_state_dict(best_state)
+
     # Plotting
     if plot_figure:
         output_path = f"reports/figures/hokus_pokus_train_loss_{method}_k_{k}_epochs_{num_epochs}.png"

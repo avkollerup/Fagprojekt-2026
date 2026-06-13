@@ -64,7 +64,7 @@ if __name__ == "__main__":
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    num_epochs = 100
+    num_epochs = int(os.environ["NUM_EPOCHS"])
     
     model, tokenizer = load_model(want_print=False)
 
