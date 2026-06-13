@@ -1,5 +1,5 @@
 #!/bin/bash
-#BSUB -J evaluation_100_epochs
+#BSUB -J evaluation
 #BSUB -q gpua100
 #BSUB -n 4
 #BSUB -R "rusage[mem=8GB] span[hosts=1]"
