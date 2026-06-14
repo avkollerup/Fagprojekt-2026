@@ -88,24 +88,29 @@ def main():
 
     print("\n--- ATTENTION MATRICES ---")
 
-    # rows = []
+    rows = []
 
-    # attn_module = model.model.layers[layer_idx].self_attn
-    # for t, (local_scores, global_scores, local_pos) in enumerate(attn_module.attention_matrices):
+    attn_module = model.model.layers[layer_idx].self_attn
+    # prefill scores: [batch, heads, seq_len, seq_len]
+    prefill_ = attn_module.prefix_attention_scores[0, head_idx]
+    print(f"Prefill attention score matrix shape: {prefill_.shape}")
 
-    #     total_len = seq_len + t + 1
-    #     row = torch.full((32, total_len), float("-inf"))
+    for t, (local_scores, global_scores, local_pos) in enumerate(attn_module.attention_matrices):
 
-    #     # Global (prompt)
-    #     row[:, :seq_len] = global_scores[0, :, 0, :]
+        total_len = seq_len + t + 1
+        row = torch.full((1,seq_len+len(generated_ids)), float(0)) # initialize with zeros
+        print(f"Token {t}: local_pos={local_pos}, local_scores shape={local_scores.shape}, global_scores shape={global_scores.shape}")
+        global_len = global_scores.shape[-1]
+        # Global (prompt) attends only over prompt keys, not the full seq_len
+        row[:, :global_len] = global_scores[0, head_idx, 0, :]
 
-    #     # Local (overwrite)
-    #     row[:, local_pos] = local_scores[0, :, 0, :]
+        # Local
+        row[0,local_pos] = local_scores[0, head_idx, 0, :].view(1,-1) * (1 - lamba) + row[0,local_pos] * lamba 
 
-    #     rows.append(row)
+        rows.append(row)
 
-    # # Stack into matrix
-    # attn_matrix = torch.stack(rows, dim=1)  # or stack per token
+    # Stack into matrix
+    attn_matrix = torch.stack(rows, dim=1) 
 
     # prefill_matrix = model.model.layers[layer_idx].self_attn.prefix_attention_scores
     # prefill_matrix = prefill_matrix[0, head_idx]  # Take the first batch and specified head

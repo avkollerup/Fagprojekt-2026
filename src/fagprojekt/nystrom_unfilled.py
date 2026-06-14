@@ -180,7 +180,7 @@ class SVDNystromLlamaAttention(nn.Module):
         basis_scores = q @ self.B * self.scaling
         basis_weights = F.softmax(basis_scores, dim=-1, dtype=torch.float32)
         token_scores = torch.matmul(basis_scores, self.global_basis_to_prompt.to(basis_scores.dtype))
-        return torch.matmul(basis_weights.to(q.dtype), self.const_cache), basis_scores, token_scores
+        return torch.matmul(basis_weights.to(q.dtype), self.const_cache), token_scores.detach().cpu()
 
     def append_target_kv(self, k, v):
         self.target_k = k if self.target_k is None else torch.cat([self.target_k, k], dim=-2)
@@ -202,10 +202,12 @@ class SVDNystromLlamaAttention(nn.Module):
         if self.prefill:
             self.build_prompt_cache(q, k, v)
             out = self.dense_causal_attention(q, k, v, attention_mask)
+            self.prefill_attention_matrix = out.detach().cpu()
+
             
         else:
             local_out, local_scores, local_positions = self.local_attention(q, k, v)
-            global_out, global_basis_scores, global_token_scores = self.global_attention(q)
+            global_out, global_scores= self.global_attention(q)
 
             if self.layer_idx == 5:
                 print("\n--- ATTENTION MIX DEBUG ---")
@@ -217,7 +219,7 @@ class SVDNystromLlamaAttention(nn.Module):
 
             out = self.lamba * global_out + (1 - self.lamba) * local_out
             if self.layer_idx == 5:
-                self.attention_matrices.append((local_scores.detach().cpu(), global_token_scores.detach().cpu(),local_positions.detach().cpu()))
+                self.attention_matrices.append((local_scores.detach().cpu(), global_scores.detach().cpu(),local_positions.detach().cpu()))
             self.append_target_kv(k, v)
 
         out = out.transpose(1, 2).reshape(*shape, -1).contiguous()
