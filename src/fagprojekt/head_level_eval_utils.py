@@ -171,7 +171,7 @@ def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=N
 
     return results
 
-def get_random_messages(path, num_tokens):
+def get_random_messages(path, num_tokens,local_window_size=0):
     """
     Read a text file and return a random token window that contains the needle.
 
@@ -219,7 +219,7 @@ def get_random_messages(path, num_tokens):
         raise ValueError("The selected window is too small to contain the full needle.")
 
     # Random position of the needle inside the selected window
-    needle_offset_in_window = random.randint(0, window_len - len(needle_ids))
+    needle_offset_in_window = random.randint(0, window_len - len(needle_ids)-local_window_size)
 
     # Start the window so that the needle appears at the chosen random offset
     window_start = (needle_start - needle_offset_in_window) % len(token_ids)
