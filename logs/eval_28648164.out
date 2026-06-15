@@ -1,0 +1,117 @@
+CUDA_VISIBLE_DEVICES: 0
+Available GPUs: 1
+Current device: 0
+Done: AIG
+Done: APA
+Done: AmericanAirlines
+Saved: reports/figures/SVD/k_tuning_all_layer_5_head_1_tokens_200_test.csv
+Saved: reports/figures/SVD/k_tuning_all_stats_layer_5_head_1_tokens_200_test.csv
+Saved: reports/figures/SVD/k_tuning_best_layer_5_head_1_tokens_200_test.csv
+Training with loss method: mse
+Epoch 1/30, mean loss=9.446984e+00
+Epoch 2/30, mean loss=2.688689e-01
+Epoch 3/30, mean loss=1.912140e-01
+Epoch 4/30, mean loss=1.443189e-01
+Epoch 5/30, mean loss=1.218646e-01
+Epoch 6/30, mean loss=9.713846e-02
+Epoch 7/30, mean loss=8.598949e-02
+Epoch 8/30, mean loss=8.594006e-02
+Epoch 9/30, mean loss=7.129920e-02
+Epoch 10/30, mean loss=7.331875e-02
+Epoch 11/30, mean loss=4.767276e-02
+Epoch 12/30, mean loss=5.234416e-02
+Epoch 13/30, mean loss=4.999736e-02
+Epoch 14/30, mean loss=5.597155e-02
+Epoch 15/30, mean loss=7.084556e-02
+Epoch 16/30, mean loss=5.396303e-02
+Epoch 17/30, mean loss=6.133059e-02
+Epoch 18/30, mean loss=5.525116e-02
+Epoch 19/30, mean loss=4.884798e-02
+Epoch 20/30, mean loss=5.828220e-02
+Epoch 21/30, mean loss=5.250726e-02
+Early stopping at epoch 21 (no improvement for 10 epochs)
+Saved train-loss plot to reports/figures/hokus_pokus_train_loss_mlp_k_45_epochs_30.png
+method_1: mean RMSE=1.901868e-02, std=2.845538e-03
+
+method_2: mean RMSE=1.818110e-02, std=2.642503e-03
+
+method_3: mean RMSE=2.618164e-02, std=3.360906e-03
+
+method_4: mean RMSE=1.356995e-02, std=1.672739e-03
+
+Hokus Pokus: mean RMSE=2.776316e-01, std=5.522348e-02
+
+K-means: mean RMSE=8.399091e-02, std=7.892814e-03
+
+method_1 vs method_2: p_raw=1.4554e-05, p_adj=2.1831e-04, reject H0=True
+method_1 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_4 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_4 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28648164: <eval_epochs_30> in cluster <dcc> Done
+
+Job <eval_epochs_30> was submitted from host <n-62-31-4> by user <s245261> in cluster <dcc> at Sat Jun 13 22:19:59 2026
+Job was executed on host(s) <4*n-62-12-23>, in queue <gpua100>, as user <s245261> in cluster <dcc> at Sat Jun 13 23:15:05 2026
+</zhome/ed/5/215919> was used as the home directory.
+</work3/s245261/Fagprojekt-2026> was used as the working directory.
+Started at Sat Jun 13 23:15:05 2026
+Terminated at Sat Jun 13 23:58:37 2026
+Results reported at Sat Jun 13 23:58:37 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J eval_epochs_30
+#BSUB -q gpua100
+#BSUB -n 4
+#BSUB -R "rusage[mem=8GB] span[hosts=1]"
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 08:00
+#BSUB -o logs/eval_%J.out
+#BSUB -e logs/eval_%J.err
+
+source /work3/s245261/Fagprojekt-2026/.venv/bin/activate
+cd /work3/s245261/Fagprojekt-2026
+export NUM_EPOCHS=30
+python -u src/fagprojekt/evaluate.py
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   2577.00 sec.
+    Max Memory :                                 1496 MB
+    Average Memory :                             1430.90 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31272.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                16
+    Run time :                                   2612 sec.
+    Turnaround time :                            5918 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/eval_28648164.err> for stderr output of this job.
+

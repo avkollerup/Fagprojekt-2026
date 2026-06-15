@@ -1,0 +1,105 @@
+CUDA_VISIBLE_DEVICES: 0
+Available GPUs: 1
+Current device: 0
+Done: AIG
+Done: APA
+Done: AmericanAirlines
+Saved: reports/figures/SVD/k_tuning_all_layer_5_head_1_tokens_200_test.csv
+Saved: reports/figures/SVD/k_tuning_all_stats_layer_5_head_1_tokens_200_test.csv
+Saved: reports/figures/SVD/k_tuning_best_layer_5_head_1_tokens_200_test.csv
+Training with loss method: mse
+Epoch 1/10, mean loss=1.070710e+01
+Epoch 2/10, mean loss=3.574157e-01
+Epoch 3/10, mean loss=1.769680e-01
+Epoch 4/10, mean loss=1.588913e-01
+Epoch 5/10, mean loss=9.835335e-02
+Epoch 6/10, mean loss=8.723203e-02
+Epoch 7/10, mean loss=9.196304e-02
+Epoch 8/10, mean loss=5.915763e-02
+Epoch 9/10, mean loss=6.662372e-02
+Epoch 10/10, mean loss=7.584068e-02
+Saved train-loss plot to reports/figures/hokus_pokus_train_loss_mlp_k_45_epochs_10.png
+method_1: mean RMSE=1.898503e-02, std=2.833660e-03
+
+method_2: mean RMSE=1.811847e-02, std=2.596769e-03
+
+method_3: mean RMSE=2.611198e-02, std=3.272382e-03
+
+method_4: mean RMSE=1.352160e-02, std=1.621962e-03
+
+Hokus Pokus: mean RMSE=2.145162e-01, std=3.474200e-02
+
+K-means: mean RMSE=8.501223e-02, std=7.255914e-03
+
+method_1 vs method_2: p_raw=2.1804e-05, p_adj=3.2706e-04, reject H0=True
+method_1 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_1 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs method_3: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_2 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs method_4: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_3 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_4 vs Hokus Pokus: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+method_4 vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=7.9206e-13, reject H0=True
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28648162: <eval_epochs_10> in cluster <dcc> Done
+
+Job <eval_epochs_10> was submitted from host <n-62-31-4> by user <s245261> in cluster <dcc> at Sat Jun 13 22:19:58 2026
+Job was executed on host(s) <4*n-62-12-23>, in queue <gpua100>, as user <s245261> in cluster <dcc> at Sat Jun 13 22:21:37 2026
+</zhome/ed/5/215919> was used as the home directory.
+</work3/s245261/Fagprojekt-2026> was used as the working directory.
+Started at Sat Jun 13 22:21:37 2026
+Terminated at Sat Jun 13 22:43:48 2026
+Results reported at Sat Jun 13 22:43:48 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J eval_epochs_10
+#BSUB -q gpua100
+#BSUB -n 4
+#BSUB -R "rusage[mem=8GB] span[hosts=1]"
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 08:00
+#BSUB -o logs/eval_%J.out
+#BSUB -e logs/eval_%J.err
+
+source /work3/s245261/Fagprojekt-2026/.venv/bin/activate
+cd /work3/s245261/Fagprojekt-2026
+export NUM_EPOCHS=10
+python -u src/fagprojekt/evaluate.py
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   1304.00 sec.
+    Max Memory :                                 1532 MB
+    Average Memory :                             1428.92 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31236.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                16
+    Run time :                                   1331 sec.
+    Turnaround time :                            1430 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/eval_28648162.err> for stderr output of this job.
+
