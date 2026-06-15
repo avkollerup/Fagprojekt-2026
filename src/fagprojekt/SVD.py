@@ -4,6 +4,11 @@ import os
 import numpy as np
 import math
 from pathlib import Path
+from torch.profiler import profile, ProfilerActivity, record_function
+
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
+
+
 
 def do_SVD(matrix):
     """Compute singular value decomposition

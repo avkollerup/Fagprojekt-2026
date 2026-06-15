@@ -7,6 +7,9 @@ from fagprojekt.nystrom_unfilled import (
     clear_nystrom,
     SVDNystromLlamaAttention,
 )
+from torch.profiler import profile, ProfilerActivity, record_function
+
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
 
 """
@@ -155,7 +158,10 @@ def debug_decode(
 
 
 def main():
+    prof.start()
+    
     model, tokenizer = load_model(want_print=True)
+    
     model.eval()
 
     layer_idx = 5
@@ -195,7 +201,12 @@ def main():
         attention_mask=inputs["attention_mask"],
         max_new_tokens=20,
     )
+    torch.cuda.synchronize()
+    prof.step()
+    prof.stop()
 
 
 if __name__ == "__main__":
     main()
+    with open("test_metrics.txt", "a") as f:
+        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))

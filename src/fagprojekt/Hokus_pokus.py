@@ -10,13 +10,15 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-from torch.profiler import ProfilerAction, profile
 import math
 from fagprojekt.SVD import decompose_K, compare_attention
 from fagprojekt.model import get_kvq, get_messages, load_model, get_true_attention_values
 import random
 
-prof = profile()
+from torch.profiler import profile, ProfilerActivity, record_function
+
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
+
 
 def build_mlp(k):
     """A small feed-forward network."""
@@ -375,7 +377,7 @@ if __name__ == "__main__":
     # --------------- PARAMETERS --------------
     from dotenv import load_dotenv
     load_dotenv()
-
+    prof.start()
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])
@@ -383,10 +385,13 @@ if __name__ == "__main__":
 
     # --------------- LOAD MODEL ONLY ONCE ---------------
     print("Loading model and tokenizer once at the start...")
-    model, tokenizer = load_model(want_print=False)
-
-    mses = k_fold_crossvalidation_decide_k(model=model,tokenizer=tokenizer,layer_idx=layer_idx,head_idx=head_idx,num_tokens=num_tokens,method='mse')
     
+    model, tokenizer = load_model(want_print=False)
+    torch.cuda.synchronize()
+    prof.step()
+    prof.stop()
+    mses = k_fold_crossvalidation_decide_k(model=model,tokenizer=tokenizer,layer_idx=layer_idx,head_idx=head_idx,num_tokens=num_tokens,method='mse')
+    with open("hokus_pokusmetrixs.txt","a") as f:
+        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))
     k_values = range(10,105,5)
-    print(k_values)
-    print(mses)
+    
