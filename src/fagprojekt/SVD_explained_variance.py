@@ -67,7 +67,7 @@ def _plot_explained_var_ratio(ax, components_list, avg_data, cum_data, title, ma
 
 
 
-def pca_analysis(num_tokens, layer_idx, companies):
+def svd_analysis(num_tokens, layer_idx, companies):
     """Run SVD approximation analysis across pages and heads for a given layer.
     
     Iterates over pages from different companies and 5 attention heads, computing:
@@ -199,9 +199,9 @@ def pca_analysis(num_tokens, layer_idx, companies):
         _plot_explained_var_ratio(axes1[row_idx, 7], components_list, ev3_avg, cev3_avg, f'Expl. Var Ratio - Method 3 (K & V joint) - Head {head}', '^', 'tab:blue',   ylim=ev_ylim)
 
     n_pages = len(companies) * len(pages)
-    fig1.suptitle(f'PCA Analysis (k sweep) - Layer {layer_idx} - Averaged Across {n_pages} Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
+    fig1.suptitle(f'SVD Analysis (k sweep) - Layer {layer_idx} - Averaged Across {n_pages} Pages - Num_tokens {num_tokens}', fontsize=14, fontweight='bold', y=0.995)
     fig1.tight_layout(rect=[0, 0, 1, 0.96])
-    fig1.savefig(f'reports/figures/PCA/pca_k_sweep_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
+    fig1.savefig(f'reports/figures/SVD/SVD_k_sweep_layer_{layer_idx}_num_tokens_{num_tokens}.pdf', dpi=150)
     plt.close(fig1)
 
 
@@ -210,10 +210,10 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
 
-    # --------------- PCA analysis across companies ---------------
+    # --------------- SVD analysis across companies ---------------
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
-    pca_analysis(num_tokens=num_tokens, layer_idx=layer_idx, companies=companies)
+    svd_analysis(num_tokens=num_tokens, layer_idx=layer_idx, companies=companies)

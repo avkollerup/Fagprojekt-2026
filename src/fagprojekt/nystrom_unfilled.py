@@ -57,7 +57,7 @@ class SVDNystromLlamaAttention(nn.Module):
         self.prefix_v = None
         self.target_k = None
         self.target_v = None
-        self.B = None
+        self.V_K = None
         self.const_cache = None
         self.prefix_global_scores = None
         self.prefix_global_weights = None
@@ -120,17 +120,17 @@ class SVDNystromLlamaAttention(nn.Module):
         self.target_v = None
         self.generated_len = 0
 
-        B = self.top_right_singular_vectors(k)
-        A = B
+        V_K = self.top_right_singular_vectors(k).transpose(-2, -1)
+        V_Q = self.top_right_singular_vectors(q).transpose(-2, -1)
 
-        M = F.softmax((A.transpose(-2, -1) @ B) * self.scaling, dim=-1)      # [r, r]
-        R = F.softmax((A.transpose(-2, -1) @ k.float().transpose(-2, -1)) * self.scaling, dim=-1)    # [r, n]
+        M = F.softmax(V_Q @ V_K.transpose(-2, -1) * self.scaling, dim=-1)      # [r, r]
+        R = F.softmax((V_Q @ k.float().transpose(-2, -1)) * self.scaling, dim=-1)    # [r, n]
 
         eye = torch.eye(M.shape[-1], device=M.device, dtype=M.dtype)
         M = (1.0 - self.eps) * M + self.eps * eye[None, None, :, :]
 
         # Saves as class variables
-        self.B = B.to(k.dtype)
+        self.V_K = V_K.to(k.dtype)
         self.global_basis_to_prompt = torch.linalg.solve(M, R)
         self.const_cache = torch.linalg.solve(M, R @ v.float()).to(v.dtype)
 
@@ -181,7 +181,7 @@ class SVDNystromLlamaAttention(nn.Module):
         landmark space and reads from the fixed prompt value table. It also
         constructs the prompt-token global row after basis softmax.
         """
-        basis_scores = q @ self.B * self.scaling
+        basis_scores = q @ self.V_K.transpose(-2, -1) * self.scaling
         basis_weights = F.softmax(basis_scores, dim=-1, dtype=torch.float32)
         prompt_scores = torch.matmul(basis_scores, self.global_basis_to_prompt.to(basis_scores.dtype))
         prompt_weights = torch.matmul(basis_weights, self.global_basis_to_prompt.to(basis_weights.dtype))

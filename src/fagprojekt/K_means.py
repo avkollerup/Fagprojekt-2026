@@ -2,8 +2,8 @@ from sklearn.cluster import KMeans
 import torch
 from fagprojekt.model import get_messages, get_kvq, get_true_attention_values
 from fagprojekt.SVD import compare_attention
-import os
-
+from pathlib import Path
+import math
 
 def k_means_clustering(key_head, value_head, query_head, clusters=8):
     """ Perform K-means clustering on the key and value head representations and 
@@ -31,32 +31,32 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
     A,B = torch.chunk(centroids, 2, dim=-1) # [clusters, C], [clusters, C]
     
     # compute the attention values  using the clustered key and value representations
-    attn_values = torch.softmax(query_head @ A.T, dim=-1) @ B
+    d = query_head.shape[-1]
+    attn_values = torch.softmax((query_head @ A.T) / math.sqrt(d), dim=-1) @ B
 
     return attn_values
 
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
 
-    # --------------- PARAMETERS --------------
-    path = "document-haystack/AIG/AIG_5Pages/Text_TextNeedles/AIG_5Pages_TextNeedles_page_4.txt"
-    num_tokens = int(os.environ["NUM_TOKENS"])
-    layer_idx = int(os.environ["LAYER_IDX"])
-    head_idx = int(os.environ["HEAD_IDX"])
-    clusters = 8
+def get_rmse_companies_K_means(model, tokenizer, layer_idx, head_idx, num_tokens, clusters, companies):
+    rmse_errors=[]
+    pages = range(1, 26)
+    for company in companies:
+        base_dir = Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")
+        for page in pages:
+            page_path = f'{base_dir}_page_{page}.txt'
+            messages, _, _ = get_messages(page_path, num_tokens=num_tokens)
+            key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
-    # --------------- K-means ---------------
-    messages, _, _ = get_messages(path, num_tokens=num_tokens)
-    key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False)
+            true_attn = get_true_attention_values(query_head, key_head, value_head)
+            attn_values_k_means = k_means_clustering(key_head, value_head, query_head, clusters=clusters)
 
-    attn_values_k_means = k_means_clustering(key_head, value_head, query_head, clusters=clusters)
+            mse, _, _ = compare_attention(true_attn, attn_values_k_means, "K_means", want_print=False)
+            rmse_errors.append(math.sqrt(mse))
 
-    # --------------- Compare attention ---------------
+    return rmse_errors
 
-    # Compare K-means with SVD 
-    attn_values_true = get_true_attention_values(query_head, key_head, value_head)
-    compare_attention(attn_values_true, attn_values_k_means, "K-means with SVD")
 
-    # Compare K-means with Hokus Pokus
-    # MANGLER
+
+
+    
+
