@@ -3,10 +3,8 @@ import torch
 from fagprojekt.model import get_messages, get_kvq, get_true_attention_values
 from fagprojekt.SVD import compare_attention
 from pathlib import Path
-import mathfrom torch.profiler import profile, ProfilerActivity, record_function
-
-prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
-
+import math
+from torch.profiler import record_function
 
 def k_means_clustering(key_head, value_head, query_head, clusters=8):
     """ Perform K-means clustering on the key and value head representations and 
