@@ -351,22 +351,29 @@ def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head
     method = "mlp"
     loss_method = 'mse'
 
-    print(f"Training with loss method: {loss_method}")
+    # print(f"Training with loss method: {loss_method}")
     
-    # Train model on the training paths
-    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True, num_epochs=num_epochs)
+    # # Train model on the training paths
+    # g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True, num_epochs=num_epochs)
 
-    # Save model
-    model_path = f"models/g_theta_weights_{method}_k_{k}_epochs_{num_epochs}.pth"
-    torch.save(g_theta.state_dict(), model_path)
+    # # Save model
+    # model_path = f"models/g_theta_weights_{method}_k_{k}_epochs_{num_epochs}.pth"
+    # torch.save(g_theta.state_dict(), model_path)
 
-    # load the g_theta model weights only once
-    g_theta_loaded = build_mlp(k).to(next(g_theta.parameters()).device)
-    g_theta_loaded.load_state_dict(torch.load(model_path, map_location=next(g_theta.parameters()).device))
-    g_theta_loaded.eval()
+    # # load the g_theta model weights only once
+    # g_theta_loaded = build_mlp(k).to(next(g_theta.parameters()).device)
+    # g_theta_loaded.load_state_dict(torch.load(model_path, map_location=next(g_theta.parameters()).device))
+    # g_theta_loaded.eval()
+
+    # Load saved model:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_path = f"models/g_theta_weights_mlp_k_{k}_epochs_{num_epochs}.pth"
+    g_theta = build_mlp(k).to(device)
+    g_theta.load_state_dict(torch.load(model_path, map_location=device))
+    g_theta.eval()
 
     # Load and compare model
-    _, _, _, rmse_per_page = compare_hokus_pokus(paths=test_paths, method=method, model_path=model_path, loaded_g_theta=g_theta_loaded, k=k, layer_idx=layer_idx, head_idx=head_idx, tokens=num_tokens, model=model, tokenizer=tokenizer)
+    _, _, _, rmse_per_page = compare_hokus_pokus(paths=test_paths, method=method, model_path=model_path, loaded_g_theta=g_theta, k=k, layer_idx=layer_idx, head_idx=head_idx, tokens=num_tokens, model=model, tokenizer=tokenizer)
     return rmse_per_page
 
 
