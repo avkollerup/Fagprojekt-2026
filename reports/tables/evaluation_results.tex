@@ -105,37 +105,44 @@ Hokus Pokus    & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-1
 
 
 % ─────────────────────────────────────────────
-% Table 4: Statistical tests — k = 45 for all SVD methods
+% Table 4: Statistical tests — k = 45 for all SVD methods (incl. SVD Nyström)
 % ─────────────────────────────────────────────
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \caption{Pairwise Wilcoxon signed-rank tests with Bonferroni correction.
-90 training epochs; SVD $k=45$ for all methods.
-$p_\text{adj}$ is the Bonferroni-corrected $p$-value ($m=15$ comparisons).}
+90 training epochs and $k=45$ for Hokus Pokus; SVD $k=45$ for all methods (including SVD Nyström).
+$p_\text{adj}$ is the Bonferroni-corrected $p$-value ($m=21$ comparisons).}
 \label{tab:stat_tests_k45}
 \begin{tabular}{ll cc c}
 \toprule
 Method A & Method B & $p_\text{raw}$ & $p_\text{adj}$ & Reject $H_0$ \\
 \midrule
-SVD-K          & SVD-V            & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-K          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-K          & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-K          & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-K          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+Method 1 (K)      & Method 2 (V)         & $1.42 \times 10^{-8}$  & $2.98 \times 10^{-7}$  & Yes \\
+Method 1 (K)      & Method 3 (KV sep.)   & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 1 (K)      & Method 4 (KV joint)  & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 1 (K)      & Hokus Pokus          & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 1 (K)      & K-means              & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 1 (K)      & SVD Nyström          & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
 \addlinespace
-SVD-V          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-V          & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-V          & Hokus Pokus      & $2.62 \times 10^{-12}$ & $3.93 \times 10^{-11}$ & Yes \\
-SVD-V          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+Method 2 (V)      & Method 3 (KV sep.)   & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 2 (V)      & Method 4 (KV joint)  & $4.68 \times 10^{-13}$ & $9.82 \times 10^{-12}$ & Yes \\
+Method 2 (V)      & Hokus Pokus          & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 2 (V)      & K-means              & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 2 (V)      & SVD Nyström          & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
 \addlinespace
-SVD-KV (sep.)  & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-KV (sep.)  & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-KV (sep.)  & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+Method 3 (KV sep.) & Method 4 (KV joint) & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 3 (KV sep.) & Hokus Pokus         & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 3 (KV sep.) & K-means             & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 3 (KV sep.) & SVD Nyström         & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
 \addlinespace
-SVD-KV (joint) & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
-SVD-KV (joint) & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+Method 4 (KV joint) & Hokus Pokus        & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 4 (KV joint) & K-means            & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Method 4 (KV joint) & SVD Nyström        & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
 \addlinespace
-Hokus Pokus    & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+Hokus Pokus        & K-means             & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+Hokus Pokus        & SVD Nyström         & $5.28 \times 10^{-14}$ & $1.11 \times 10^{-12}$ & Yes \\
+\addlinespace
+K-means            & SVD Nyström         & $1.29 \times 10^{-11}$ & $2.71 \times 10^{-10}$ & Yes \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -148,9 +155,9 @@ Hokus Pokus    & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-1
 \centering
 \caption{Final ranking of all methods by mean RMSE on the test set (AIG,
 AmericanAirlines, APA). SVD methods use their individually selected best $k$;
-Hokus Pokus uses $k=45$ trained for 90 epochs; K-means uses 8 clusters.
-All pairwise differences are statistically significant ($p_\text{adj} < 0.05$,
-Wilcoxon signed-rank with Bonferroni correction).}
+Hokus Pokus uses $k=45$ trained for 90 epochs; K-means uses 8 clusters;
+SVD Nyström uses $k=45$. All pairwise differences are statistically significant
+($p_\text{adj} < 0.05$, Wilcoxon signed-rank with Bonferroni correction).}
 \label{tab:ranking}
 \begin{tabular}{c l c c c}
 \toprule
@@ -162,6 +169,7 @@ Rank & Method & Parameter & Mean RMSE & Std \\
 4 & SVD-KV (sep.)    & $k = 68$ & $0.1927$ & $0.0259$ \\
 5 & SVD-KV (joint)   & $k = 68$ & $0.2477$ & $0.0301$ \\
 6 & K-means          & 8 clusters & $0.7927$ & $0.0699$ \\
+7 & SVD Nyström      & $k = 45$   & $1.2041$ & $0.9371$ \\
 \bottomrule
 \end{tabular}
 \end{table}
