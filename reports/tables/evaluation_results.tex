@@ -1,0 +1,167 @@
+% Requires: \usepackage{booktabs, multirow}
+
+% ─────────────────────────────────────────────
+% Table 1: SVD k-value sweep (mean ± std RMSE)
+% ─────────────────────────────────────────────
+\begin{table}[ht]
+\centering
+\caption{Mean RMSE $\pm$ std.\ on test set (AIG, AmericanAirlines, APA) for each SVD
+method across the three candidate values of $k$. SVD-K decomposes only the key matrix;
+SVD-V only the value matrix; SVD-KV (sep.)\ decomposes both matrices independently;
+SVD-KV (joint)\ decomposes both jointly.}
+\label{tab:svd_k_sweep}
+\begin{tabular}{l c c}
+\toprule
+Method & $k$ & Mean RMSE $\pm$ Std \\
+\midrule
+\multirow{3}{*}{SVD-K}
+  & 33 & $0.2787 \pm 0.0327$ \\
+  & 45 & $0.2388 \pm 0.0308$ \\
+  & 62 & $\mathbf{0.1822 \pm 0.0288}$ \\
+\midrule
+\multirow{3}{*}{SVD-V}
+  & 21 & $0.2977 \pm 0.0243$ \\
+  & 45 & $0.1808 \pm 0.0174$ \\
+  & 74 & $\mathbf{0.1011 \pm 0.0135}$ \\
+\midrule
+\multirow{3}{*}{SVD-KV (sep.)}
+  & 21 & $0.4013 \pm 0.0354$ \\
+  & 45 & $0.2811 \pm 0.0294$ \\
+  & 68 & $\mathbf{0.1927 \pm 0.0260}$ \\
+\midrule
+\multirow{3}{*}{SVD-KV (joint)}
+  & 37 & $0.3298 \pm 0.0333$ \\
+  & 45 & $0.3077 \pm 0.0327$ \\
+  & 68 & $\mathbf{0.2477 \pm 0.0303}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────
+% Table 2: Hokus Pokus epoch tuning
+% ─────────────────────────────────────────────
+\begin{table}[ht]
+\centering
+\caption{Hokus Pokus ($g_\theta$, MLP) RMSE on test set for different numbers of training
+epochs ($k=45$, layer~5, head~1, 200 tokens). Bold marks the best result.}
+\label{tab:hp_epochs}
+\begin{tabular}{c c}
+\toprule
+Epochs & Mean RMSE $\pm$ Std \\
+\midrule
+ 10  & $0.2145 \pm 0.0347$ \\
+ 20  & $0.2210 \pm 0.0400$ \\
+ 30  & $0.2776 \pm 0.0552$ \\
+ 40  & $0.2129 \pm 0.0466$ \\
+ 50  & $0.2158 \pm 0.0468$ \\
+ 60  & $0.2075 \pm 0.0261$ \\
+ 70  & $0.1646 \pm 0.0228$ \\
+ 80  & $0.2241 \pm 0.0540$ \\
+ 90  & $\mathbf{0.1439 \pm 0.0181}$ \\
+100  & $0.2418 \pm 0.0442$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────
+% Table 3: Statistical tests — k = {33, 21, 21, 37}
+% (SVD-K=33, SVD-V=21, SVD-KV sep.=21, SVD-KV joint=37)
+% ─────────────────────────────────────────────
+\begin{table}[ht]
+\centering
+\caption{Pairwise Wilcoxon signed-rank tests with Bonferroni correction.
+90 training epochs; SVD $k$ values: SVD-K$=33$, SVD-V$=21$,
+SVD-KV (sep.)$=21$, SVD-KV (joint)$=37$.
+$p_\text{adj}$ is the Bonferroni-corrected $p$-value ($m=15$ comparisons).}
+\label{tab:stat_tests_k_low}
+\begin{tabular}{ll cc c}
+\toprule
+Method A & Method B & $p_\text{raw}$ & $p_\text{adj}$ & Reject $H_0$ \\
+\midrule
+SVD-K          & SVD-V            & $1.29 \times 10^{-8}$  & $1.94 \times 10^{-7}$  & Yes \\
+SVD-K          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-V          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-V          & SVD-KV (joint)   & $4.33 \times 10^{-13}$ & $6.49 \times 10^{-12}$ & Yes \\
+SVD-V          & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-V          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-KV (sep.)  & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (sep.)  & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (sep.)  & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-KV (joint) & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (joint) & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+Hokus Pokus    & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────
+% Table 4: Statistical tests — k = 45 for all SVD methods
+% ─────────────────────────────────────────────
+\begin{table}[ht]
+\centering
+\caption{Pairwise Wilcoxon signed-rank tests with Bonferroni correction.
+90 training epochs; SVD $k=45$ for all methods.
+$p_\text{adj}$ is the Bonferroni-corrected $p$-value ($m=15$ comparisons).}
+\label{tab:stat_tests_k45}
+\begin{tabular}{ll cc c}
+\toprule
+Method A & Method B & $p_\text{raw}$ & $p_\text{adj}$ & Reject $H_0$ \\
+\midrule
+SVD-K          & SVD-V            & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-K          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-V          & SVD-KV (sep.)    & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-V          & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-V          & Hokus Pokus      & $2.62 \times 10^{-12}$ & $3.93 \times 10^{-11}$ & Yes \\
+SVD-V          & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-KV (sep.)  & SVD-KV (joint)   & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (sep.)  & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (sep.)  & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+SVD-KV (joint) & Hokus Pokus      & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+SVD-KV (joint) & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\addlinespace
+Hokus Pokus    & K-means          & $5.28 \times 10^{-14}$ & $7.92 \times 10^{-13}$ & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────
+% Table 5: Final method ranking (best k per SVD method, 90 epochs)
+% ─────────────────────────────────────────────
+\begin{table}[ht]
+\centering
+\caption{Final ranking of all methods by mean RMSE on the test set (AIG,
+AmericanAirlines, APA). SVD methods use their individually selected best $k$;
+Hokus Pokus uses $k=45$ trained for 90 epochs; K-means uses 8 clusters.
+All pairwise differences are statistically significant ($p_\text{adj} < 0.05$,
+Wilcoxon signed-rank with Bonferroni correction).}
+\label{tab:ranking}
+\begin{tabular}{c l c c c}
+\toprule
+Rank & Method & Parameter & Mean RMSE & Std \\
+\midrule
+1 & SVD-V            & $k = 74$ & $0.1011$ & $0.0134$ \\
+2 & Hokus Pokus      & 90 epochs & $0.1526$ & $0.0168$ \\
+3 & SVD-K            & $k = 62$ & $0.1822$ & $0.0286$ \\
+4 & SVD-KV (sep.)    & $k = 68$ & $0.1927$ & $0.0259$ \\
+5 & SVD-KV (joint)   & $k = 68$ & $0.2477$ & $0.0301$ \\
+6 & K-means          & 8 clusters & $0.7927$ & $0.0699$ \\
+\bottomrule
+\end{tabular}
+\end{table}
