@@ -21,10 +21,9 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
         attn_values: The attention values computed using the clustered key and value representations.
     """
     with record_function("k_means"):
-        kmeans = KMeans(n_clusters=clusters)
-
-        # concatenate key and value head for clustering
         kv_concat = torch.cat((key_head, value_head), dim=-1) # [T, 2C]
+        clusters = min(clusters, kv_concat.shape[0])
+        kmeans = KMeans(n_clusters=clusters)
 
         # fit and transform to cluster space
         kmeans.fit(kv_concat.cpu().numpy())  # convert to CPU numpy array
@@ -85,7 +84,7 @@ def get_rmse_companies_K_means(model, tokenizer, layer_idx, head_idx, num_tokens
         fig, ax = plt.subplots(figsize=(7, 4))
         m = stats_df.sort_values("clusters")
         raw = df.sort_values("clusters")
-        ax.scatter(raw["clusters"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+        # ax.scatter(raw["clusters"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
         ax.plot(m["clusters"], m["mean"], linewidth=2, color="tomato", label="mean")
         ax.fill_between(m["clusters"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
 
@@ -115,8 +114,8 @@ if __name__ == "__main__":
     model, tokenizer = load_model()
 
     # Finding best cluster number
-    clusters_list = np.linspace(2, 100, 30, dtype=int).tolist()
+    clusters_list = np.linspace(1, 400, 100, dtype=int).tolist()
     companies = ['Barclays', 'BlackRock', 'BNYMellon', 'CapitalOne', 'CitiGroup', 'Cofinimmo', 'CVS', 'DWS', 'Entain']
-    get_rmse_companies_K_means(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, clusters_list=clusters_list, companies=companies, path_suffix="", want_plot=True)
+    get_rmse_companies_K_means(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, clusters_list=clusters_list, companies=companies, path_suffix="testestestestest", want_plot=True)
 
 
