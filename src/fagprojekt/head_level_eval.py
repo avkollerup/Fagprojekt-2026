@@ -21,7 +21,7 @@ method_func = "method_1"
 def head_level_eval(path, num_tokens, file_num, model, tokenizer, method_func):
 
     # Create the chat messages
-    messages, _, needle = get_messages(path, num_tokens=num_tokens)
+    messages, _, needle = get_random_messages(path, num_tokens=num_tokens)
 
     # Find the exact token positions where the needle appears in the full model input
     needle_positions = find_token_positions(tokenizer, messages, needle)
