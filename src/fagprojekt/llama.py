@@ -35,7 +35,7 @@ def compute_attention_weights(query_head, key_head, head_dim=128):
 
 def main():
     print("running")
-    model, tokenizer = load_model(want_print=True, attn_implementation='eager')
+    model, tokenizer = load_model(want_print=True)
     model.eval()
 
     layer_idx = 5
