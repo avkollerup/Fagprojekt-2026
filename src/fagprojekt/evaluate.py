@@ -8,6 +8,9 @@ import itertools
 import numpy as np
 from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
+from torch.profiler import profile, ProfilerActivity, record_function, schedule
+import torch
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
 
 def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs):
@@ -61,6 +64,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
+    prof.start()
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
@@ -75,6 +79,12 @@ if __name__ == "__main__":
 
     run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs)
 
+    torch.cuda.syncronize()
+    prof.step()
+    prof.stop()
+
+    with open("eval_metrics.txt", "a") as f:
+        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 
 # 90 epochs, {"method_1": 33, "method_2": 21, "method_3": 37, "method_4": 21}

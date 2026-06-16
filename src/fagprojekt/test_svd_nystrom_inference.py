@@ -49,6 +49,17 @@ def main():
 
     messages, _, needle = get_random_messages(path, num_tokens=num_tokens,local_window_size=local_window)
 
+    prompt = 'What is the secret color?'
+    needle = " The secret color is green"
+    text = f' x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x  x x x x x x x x x x x x x x x x x x x x{needle} x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x '
+    # overskriv med eksempel for at undgå støj i attention
+    messages = [
+    {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
+    {"role": "user", "content": f"Read the following text and answer the question: {prompt},{text}"}, # Besked fra user (os) 
+    ]
+    
+    
+
     inputs = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
@@ -62,11 +73,9 @@ def main():
 
     input_ids = inputs["input_ids"]
     attention_mask = inputs["attention_mask"]
-
     with torch.no_grad():
         # Prefill: build compressed prompt cache.
         set_prefill(model, True)
-
         outputs = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
 
         # First generated token.
@@ -84,7 +93,7 @@ def main():
 
             if next_token.item() == tokenizer.eos_token_id:
                 break
-
+    
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
 
     seq_len = input_ids.shape[-1]
@@ -120,7 +129,7 @@ def main():
         ax_heat.text(-0.08, (needle_min + needle_max) / 2 + 0.5, "needle", color=needle_color, ha="right", va="center", transform=ax_heat.get_yaxis_transform())
 
 
-        plt.savefig(f"reports/figures/attention_heatmaps/attention_heatmap_head{head}.png")
+        plt.savefig(f"reports/figures/attention_heatmaps/_attention_heatmap_head{head}.png")
         plt.close()
      
 

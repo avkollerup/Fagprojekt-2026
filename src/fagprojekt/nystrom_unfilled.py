@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb, repeat_kv
-
+from torch.profiler import record_function
 
 class SVDNystromLlamaAttention(nn.Module):
     """Minimal SVD-Nystrom replacement for one Hugging Face LLaMA attention layer.
@@ -231,29 +231,30 @@ def patch_llama_attention(
     lamba: float = 1.0,
     svd_mode: str = "svd_k",
     model_output_layer_idx = 5):
+    with record_function("Llama"):
+        if layers == "all":
+            layers = range(len(model.model.layers))
+        elif isinstance(layers, int):
+            layers = [layers]
+        elif isinstance(layers, str):
+            layers = [int(x) for x in layers.split(",")]
 
-    if layers == "all":
-        layers = range(len(model.model.layers))
-    elif isinstance(layers, int):
-        layers = [layers]
-    elif isinstance(layers, str):
-        layers = [int(x) for x in layers.split(",")]
-
-    for i in layers:
-        model.model.layers[i].self_attn = SVDNystromLlamaAttention(
-            model.model.layers[i].self_attn,
-            rank=rank,
-            local_window=local_window,
-            eps=eps,
-            lamba=lamba,
-            svd_mode=svd_mode)
+        for i in layers:
+            model.model.layers[i].self_attn = SVDNystromLlamaAttention(
+                model.model.layers[i].self_attn,
+                rank=rank,
+                local_window=local_window,
+                eps=eps,
+                lamba=lamba,
+                svd_mode=svd_mode)
     return model
 
 
 def set_prefill(model, enabled: bool):
-    for module in model.modules():
-        if isinstance(module, SVDNystromLlamaAttention):
-            module.prefill = enabled
+    with record_function("prefill"):
+        for module in model.modules():
+            if isinstance(module, SVDNystromLlamaAttention):
+                module.prefill = enabled
 
 
 def clear_nystrom(model):

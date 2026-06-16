@@ -6,6 +6,7 @@ from pathlib import Path
 import math
 import os
 import numpy as np
+from torch.profiler import record_function
 
 def k_means_clustering(key_head, value_head, query_head, clusters=8):
     """ Perform K-means clustering on the key and value head representations and 
@@ -19,23 +20,22 @@ def k_means_clustering(key_head, value_head, query_head, clusters=8):
     Returns:
         attn_values: The attention values computed using the clustered key and value representations.
     """
+    with record_function("k_means"):
+        kmeans = KMeans(n_clusters=clusters)
 
-    kmeans = KMeans(n_clusters=clusters)
+        # concatenate key and value head for clustering
+        kv_concat = torch.cat((key_head, value_head), dim=-1) # [T, 2C]
 
-    # concatenate key and value head for clustering
-    kv_concat = torch.cat((key_head, value_head), dim=-1) # [T, 2C]
+        # fit and transform to cluster space
+        kmeans.fit(kv_concat.cpu().numpy())  # convert to CPU numpy array
+        centroids = torch.tensor(kmeans.cluster_centers_, device=kv_concat.device, dtype=kv_concat.dtype)  # [clusters, 2C]
 
-    # fit and transform to cluster space
-    kmeans.fit(kv_concat.cpu().numpy())  # convert to CPU numpy array
-    centroids = torch.tensor(kmeans.cluster_centers_, device=kv_concat.device, dtype=kv_concat.dtype)  # [clusters, 2C]
-
-    # split the clustered space back into key and value components
-    A,B = torch.chunk(centroids, 2, dim=-1) # [clusters, C], [clusters, C]
-    
-    # compute the attention values  using the clustered key and value representations
-    d = query_head.shape[-1]
-    attn_values = torch.softmax((query_head @ A.T) / math.sqrt(d), dim=-1) @ B
-
+        # split the clustered space back into key and value components
+        A,B = torch.chunk(centroids, 2, dim=-1) # [clusters, C], [clusters, C]
+        
+        # compute the attention values  using the clustered key and value representations
+        d = query_head.shape[-1]
+        attn_values = torch.softmax((query_head @ A.T) / math.sqrt(d), dim=-1) @ B
     return attn_values
 
 

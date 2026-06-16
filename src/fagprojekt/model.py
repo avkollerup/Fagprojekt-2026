@@ -7,7 +7,9 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import re
 import random
+from torch.profiler import profile, ProfilerActivity, record_function
 
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
 MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
 
@@ -24,12 +26,13 @@ def load_model(want_print=True):
         tuple[AutoModelForCausalLM, AutoTokenizer]: Loaded model and tokenizer.
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        dtype=torch.bfloat16,
-        device_map=device,
-        low_cpu_mem_usage=True)
-    tokenizer = _get_tokenizer()
+    with record_function("Model Load"):
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            dtype=torch.bfloat16,
+            device_map=device,
+            low_cpu_mem_usage=True)
+        tokenizer = _get_tokenizer()
 
     if want_print:
         print("-------------- MODEL DEVICE --------------")
@@ -111,16 +114,17 @@ def get_response(model, tokenizer, messages):
     ).to(device)
 
     # Genererer output tokens (LLM'ens svar)
-    outputs = model.generate(
-        **inputs, 
-        max_new_tokens=256, 
-        eos_token_id=tokenizer.eos_token_id, # Indsæt stop-token
-        pad_token_id=tokenizer.eos_token_id,
-        # output_attentions=True,
-        use_cache=True, 
-        return_dict_in_generate=True,
-    )
-    generated_tokens = outputs.sequences[0]
+    with record_function("Output Generation"):
+        outputs = model.generate(
+            **inputs, 
+            max_new_tokens=256, 
+            eos_token_id=tokenizer.eos_token_id, # Indsæt stop-token
+            pad_token_id=tokenizer.eos_token_id,
+            # output_attentions=True,
+            use_cache=True, 
+            return_dict_in_generate=True,
+        )
+        generated_tokens = outputs.sequences[0]
     return inputs, outputs, generated_tokens
 
 def extract_KV(outputs, layer_idx, head_idx):
@@ -135,10 +139,11 @@ def extract_KV(outputs, layer_idx, head_idx):
         tuple: Full KV cache layers, full key tensor, full value tensor,
         selected key head tensor, and selected value head tensor.
     """
-    KV_cache = outputs.past_key_values.layers
-    layer = KV_cache[layer_idx]
-    key = layer.keys # [batch_size, num_heads, seq_len, head_dim]
-    value = layer.values # [batch_size, num_heads, seq_len, head_dim]
+    with record_function("kv extraction"):
+        KV_cache = outputs.past_key_values.layers
+        layer = KV_cache[layer_idx]
+        key = layer.keys # [batch_size, num_heads, seq_len, head_dim]
+        value = layer.values # [batch_size, num_heads, seq_len, head_dim]
 
     key_head = key[0][head_idx] # [0] fordi, der er 1 batch
     value_head =  value[0][head_idx]
