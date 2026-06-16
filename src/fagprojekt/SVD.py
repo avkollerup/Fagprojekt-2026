@@ -107,13 +107,17 @@ def method_3(key_head, query_head, value_head, k):
 
 
 def get_rmse(key_head, query_head, value_head, k_per_method):
-    """Compute RMSE, relative Frobenius error, and cosine similarity for each method and k.
+    """Compute relative RMSE and cosine similarity for each method and k.
+
+    Relative RMSE = sqrt(mean((true - approx)²)) / sqrt(mean(true²))
+                  = RMSE(approx) / RMS(true)
 
     Args:
         k_per_method: dict mapping method name to a list of k values, e.g.
             {'method_1': [80, 90], 'method_2': [95], 'method_3': [60], 'method_4': [85]}
     """
     true_attn = get_true_attention_values(query_head, key_head, value_head)
+    true_rms = torch.mean(true_attn ** 2).sqrt().item()
 
     all_results = {name: [] for name in k_per_method}
 
@@ -130,8 +134,8 @@ def get_rmse(key_head, query_head, value_head, k_per_method):
             else:
                 continue
 
-            mse, _, cos_sim = compare_attention(true_attn, approx, name, want_print=False)
-            all_results[name].append({'k': k, 'rmse': math.sqrt(mse), 'cos_sim': cos_sim})
+            mse, _, _ = compare_attention(true_attn, approx, name, want_print=False)
+            all_results[name].append({'k': k, 'rmse': math.sqrt(mse) / true_rms})
 
     return all_results
 
@@ -151,7 +155,7 @@ def get_rmse_companies_SVD(model, tokenizer, layer_idx, head_idx, num_tokens, th
             all_results = get_rmse(key_head, query_head, value_head, thresholds_per_method)
             for method, results in all_results.items():
                 for result in results:
-                    rows.append({"company": company, "page": page, "method": method, "k": result["k"], "rmse": result["rmse"], "cos_sim": result["cos_sim"]})
+                    rows.append({"company": company, "page": page, "method": method, "k": result["k"], "rmse": result["rmse"]})
 
         print(f"Done: {company}")
 
@@ -176,8 +180,15 @@ def get_rmse_companies_SVD(model, tokenizer, layer_idx, head_idx, num_tokens, th
     n_prompts = len(df) // len(df["method"].unique()) // len(df["k"].unique())
 
     if want_plot:
-        # Plot RMSE vs k with spread across prompts
-        methods = df["method"].unique()
+        # Fixed order and display labels (method_4 = V only = "Method 2" in the plot)
+        method_order = ['method_1', 'method_4', 'method_2', 'method_3']
+        method_labels = {
+            'method_1': 'Method 1 (K)',
+            'method_4': 'Method 2 (V)',
+            'method_2': 'Method 3 (K & V sep)',
+            'method_3': 'Method 4 (K & V joint)',
+        }
+        methods = [m for m in method_order if m in df["method"].unique()]
         fig, axes = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
         for ax, method in zip(axes, methods):
             m = stats_df[stats_df["method"] == method].sort_values("k")
@@ -206,53 +217,15 @@ def get_rmse_companies_SVD(model, tokenizer, layer_idx, head_idx, num_tokens, th
             ax.set_xlabel("k")
             ax.legend(fontsize=7)
             ax.tick_params(labelleft=True)
-            ax.set_title(method, fontsize=9, fontweight="bold")
-            ax.set_ylabel("RMSE")
+            ax.set_title(method_labels[method], fontsize=9, fontweight="bold")
+            ax.set_ylabel("Relative RMSE")
             ax.grid(True, alpha=0.3)
-        fig.suptitle(f"RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+        fig.suptitle(f"Relative RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
         fig.tight_layout()
         dist_path = f"reports/figures/SVD/k_distribution_{tag}.pdf"
         fig.savefig(dist_path, dpi=150)
         plt.close(fig)
         print(f"Saved: {dist_path}")
-
-        # Plot cosine similarity vs k with spread across prompts
-        cos_stats_df = df.groupby(["method", "k"])["cos_sim"].agg(["mean", "std"]).reset_index()
-        fig2, axes2 = plt.subplots(1, len(methods), figsize=(5 * len(methods), 4), sharey=True)
-        for ax, method in zip(axes2, methods):
-            m = cos_stats_df[cos_stats_df["method"] == method].sort_values("k")
-            raw = df[df["method"] == method].sort_values("k")
-            ax.scatter(raw["k"], raw["cos_sim"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
-            ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
-            ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
-
-            # Elbow: normalize to [0,1], find where slope first drops below +1
-            ks = m["k"].values.astype(float)
-            means = m["mean"].values.astype(float)
-            k_range = ks.max() - ks.min()
-            c_range = means.max() - means.min()
-            if len(ks) > 1 and k_range > 0 and c_range > 0:
-                # xnormalized = (x - xminimum) / range of x
-                k_norm = (ks - ks.min()) / k_range
-                c_norm = (means - means.min()) / c_range
-                slopes_norm = np.diff(c_norm) / np.diff(k_norm)
-                cross_idx = np.where(slopes_norm < 1)[0]
-                if len(cross_idx) > 0:
-                    k_cross = int(ks[cross_idx[0]])
-                    ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
-
-            ax.set_xlabel("k")
-            ax.legend(fontsize=7)
-            ax.tick_params(labelleft=True)
-            ax.set_title(method, fontsize=9, fontweight="bold")
-            ax.set_ylabel("Cosine similarity")
-            ax.grid(True, alpha=0.3)
-        fig2.suptitle(f"Cosine similarity vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
-        fig2.tight_layout()
-        cos_path = f"reports/figures/SVD/k_cosine_{tag}.pdf"
-        fig2.savefig(cos_path, dpi=150)
-        plt.close(fig2)
-        print(f"Saved: {cos_path}")
 
 
 def compare_attention(true_attn, approx_attn, name, want_print=True):
@@ -278,7 +251,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx  = int(os.environ["LAYER_IDX"])
@@ -289,8 +262,8 @@ if __name__ == "__main__":
     all_methods = ['method_1', 'method_2', 'method_3', 'method_4']
 
     # Finding best k
-    k_list = np.linspace(1, 150, 50, dtype=int).tolist()
+    k_list = np.linspace(1, 300, 150, dtype=int).tolist()
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
-    get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method={m: k_list for m in all_methods}, companies=companies, path_suffix="", want_plot=True)
+    get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method={m: k_list for m in all_methods}, companies=companies, path_suffix="testestestestest", want_plot=True)
 
 
