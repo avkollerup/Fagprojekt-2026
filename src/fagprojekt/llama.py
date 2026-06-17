@@ -1,4 +1,6 @@
 print('started')
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 import torch
 import math
 import seaborn as sns
@@ -84,11 +86,13 @@ def main():
 
     layer_idx = 5
     head_idx = 0
+    local_window = 128
 
-    # path = "document-haystack/BankOfMontreal/BankOfMontreal_25Pages/Text_TextNeedles/BankOfMontreal_25Pages_TextNeedles_page_9.txt"
-    # num_tokens = 400  
+    #path = "document-haystack/BankOfMontreal/BankOfMontreal_25Pages/Text_TextNeedles/BankOfMontreal_25Pages_TextNeedles_page_9.txt"
+    path = "document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_3.txt"
+    num_tokens = 400  
 
-    # messages, _, needle = get_random_messages(path, num_tokens=num_tokens, local_window_size=local_window)
+    messages, _, needle = get_random_messages(path, num_tokens=num_tokens, local_window_size=local_window)
 
     # prompt = 'What is the secret color?'
     # needle = " The secret color is green"
@@ -98,14 +102,14 @@ def main():
     #     {"role": "user", "content": f"Read the following text and answer the question: {prompt},{text}"},
     # ]
 
-    prompt = 'What is the secret color?'
-    needle = " The secret color is green"
-    text = f' x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x  x x x x x x x x x x x x x x x x x x x x{needle} x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x '
-    # overskriv med eksempel for at undgå støj i attention
-    messages = [
-    {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
-    {"role": "user", "content": f"Read the following text and answer the question: {prompt},{text}"}, # Besked fra user (os) 
-    ]
+    # prompt = 'What is the secret color?'
+    # needle = " The secret color is green"
+    # text = f' x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x  x x x x x x x x x x x x x x x x x x x x{needle} x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x '
+    # # overskriv med eksempel for at undgå støj i attention
+    # messages = [
+    # {"role": "system", "content": "You will recieve a question of the form 'What is the secret (key) in the document?' and must answer in the form 'The secret (key) is (value).'."}, # Besked til modellen om hvordan den skal opføre sig
+    # {"role": "user", "content": f"Read the following text and answer the question: {prompt},{text}"}, # Besked fra user (os) 
+    # ]
 
 
     
@@ -186,7 +190,7 @@ def main():
     ax_heat.plot([-0.08, -0.08], [needle_min + 0.5, needle_max + 0.5], color=needle_color, linewidth=3, transform=ax_heat.get_yaxis_transform(), clip_on=False)
     ax_heat.text(-0.08, (needle_min + needle_max) / 2 + 0.5, "needle", color=needle_color, ha="right", va="center", transform=ax_heat.get_yaxis_transform())
 
-    plt.savefig(f"reports/figures/attention_heatmaps/causal_llama_attention_heatmap_head{head_idx}.png")
+    plt.savefig(f"reports/figures/attention_heatmaps/causal_llama_AIG_attention_heatmap_head{head_idx}.png")
     plt.close()
 
 
