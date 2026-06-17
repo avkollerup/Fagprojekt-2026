@@ -5,6 +5,9 @@ from fagprojekt.model import (load_model, get_messages)
 from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom,build_full_attention_matrix)
 from fagprojekt.head_level_eval_utils import find_token_positions, get_random_messages
 import matplotlib.pyplot as plt
+from torch.profiler import profile, ProfilerActivity, record_function
+
+prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
 """
 Simple test of SVD-Nystrom attention.
@@ -22,6 +25,7 @@ def sample_next_token(logits):
 
 def main():
     print("running")
+    prof.start()
     model, tokenizer = load_model(want_print=True)
     model.eval()
 
@@ -87,14 +91,19 @@ def main():
 
         for _ in range(20):
             outputs = model(input_ids=next_token, attention_mask=torch.ones_like(next_token), use_cache=False)
-
-            next_token = sample_next_token(outputs.logits)
-            generated.append(next_token)
+            with record_function("token generation"):
+                next_token = sample_next_token(outputs.logits)
+                generated.append(next_token)
 
             if next_token.item() == tokenizer.eos_token_id:
                 break
     
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
+    torch.cuda.synchronize()
+    prof.step()
+    prof.stop()
+    with open("infernce_metrics.txt", "a") as f:
+        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
     seq_len = input_ids.shape[-1]
     print("Length of input tokens:", seq_len)
