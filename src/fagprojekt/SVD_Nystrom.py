@@ -32,9 +32,6 @@ def nystrom_attention_approx(key_head, query_head, value_head, k, eps=1e-4):
         Approximate attention output [T, D].
     """
     d = key_head.shape[-1]
-    # At k == min(T, D) the landmark basis hits exact full rank and M can become
-    # ill-conditioned, so cap one short of that; beyond it the basis is a no-op anyway.
-    k = min(k, key_head.shape[0] - 1, d - 1)
 
     V_K = _top_right_singular_vectors(key_head, k)    # [r, D]
     V_Q = _top_right_singular_vectors(query_head, k)  # [r, D]
@@ -149,6 +146,6 @@ if __name__ == "__main__":
     model, tokenizer = load_model()
 
     # Finding best k
-    k_list = [1,45]
+    k_list = np.linspace(1, 300, 100, dtype=int).tolist()
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
-    get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=k_list, companies=companies, path_suffix="testest", want_plot=True)
+    get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=k_list, companies=companies, path_suffix="test", want_plot=True)
