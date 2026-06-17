@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from fagprojekt.model import get_messages, get_kvq, get_true_attention_values
+from fagprojekt.model import get_messages, get_kvq, get_true_attention_values, load_model
 from fagprojekt.SVD import compare_attention
 
 
@@ -32,6 +32,9 @@ def nystrom_attention_approx(key_head, query_head, value_head, k, eps=1e-4):
         Approximate attention output [T, D].
     """
     d = key_head.shape[-1]
+    # At k == min(T, D) the landmark basis hits exact full rank and M can become
+    # ill-conditioned, so cap one short of that; beyond it the basis is a no-op anyway.
+    k = min(k, key_head.shape[0] - 1, d - 1)
 
     V_K = _top_right_singular_vectors(key_head, k)    # [r, D]
     V_Q = _top_right_singular_vectors(query_head, k)  # [r, D]
@@ -90,5 +93,62 @@ def get_rmse_companies_Nystrom(model, tokenizer, layer_idx, head_idx, num_tokens
     best_df.to_csv(f"reports/figures/SVD_Nystrom/rank_tuning_best_{tag}.csv", index=False)
     print(f"Saved: reports/figures/SVD_Nystrom/rank_tuning_best_{tag}.csv")
 
+    n_prompts = len(df) // len(k_list)
+
+    if want_plot:
+        fig, ax = plt.subplots(figsize=(7, 4))
+        m = stats_df.sort_values("k")
+        raw = df.sort_values("k")
+        ax.scatter(raw["k"], raw["rmse"], s=8, alpha=0.3, color="steelblue", label="per-prompt")
+        ax.plot(m["k"], m["mean"], linewidth=2, color="tomato", label="mean")
+        ax.fill_between(m["k"], m["mean"] - m["std"], m["mean"] + m["std"], alpha=0.35, color="orange", label="±std")
+
+        # Elbow: exclude near-zero plateau, normalize to [0,1], find where slope first rises above -1
+        ks = m["k"].values.astype(float)
+        means = m["mean"].values.astype(float)
+        valid = means > means.max() * 0.01
+        ks_v, means_v = ks[valid], means[valid]
+        if len(ks_v) > 1:
+            k_range = ks_v.max() - ks_v.min()
+            r_range = means_v.max() - means_v.min()
+            if k_range > 0 and r_range > 0:
+                k_norm = (ks_v - ks_v.min()) / k_range
+                r_norm = (means_v - means_v.min()) / r_range
+                slopes_norm = np.diff(r_norm) / np.diff(k_norm)
+                cross_idx = np.where(slopes_norm >= -1)[0]
+                if len(cross_idx) > 0:
+                    k_cross = int(ks_v[cross_idx[0]])
+                    ax.axvline(k_cross, color="green", linestyle="--", linewidth=1.5, label=f"elbow k={k_cross}")
+
+        ax.set_xlabel("k")
+        ax.legend(fontsize=7)
+        ax.tick_params(labelleft=True)
+        ax.set_title(f"Relative RMSE vs k (spread across {n_prompts} prompts) — Layer {layer_idx}, Head {head_idx}", fontsize=11)
+        ax.set_ylabel("Relative RMSE")
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        dist_path = f"reports/figures/SVD_Nystrom/k_distribution_{tag}.pdf"
+        fig.savefig(dist_path, dpi=150)
+        plt.close(fig)
+        print(f"Saved: {dist_path}")
 
 
+
+if __name__ == "__main__":
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+    num_tokens = int(os.environ["NUM_TOKENS"])
+    layer_idx  = int(os.environ["LAYER_IDX"])
+    head_idx   = int(os.environ["HEAD_IDX"])
+
+    model, tokenizer = load_model()
+
+    # Finding best k
+    k_list = [1,45]
+    companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
+    get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=k_list, companies=companies, path_suffix="testest", want_plot=True)
