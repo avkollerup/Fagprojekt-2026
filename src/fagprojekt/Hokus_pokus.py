@@ -3,9 +3,6 @@ import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import torch
-print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
-print(f"Available GPUs: {torch.cuda.device_count()}")
-print(f"Current device: {torch.cuda.current_device()}")
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
@@ -348,7 +345,7 @@ def k_fold_crossvalidation_decide_k(model = None, tokenizer = None,folds=9,layer
 def get_rmse_companies_Hokus_Pokus(model, tokenizer, num_tokens, layer_idx, head_idx, k, train_companies, test_companies, num_epochs):
     # --------------- TRAINING AND TEST PATHS ---------------
     train_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in train_companies for page in range(1,26)]
-    test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in test_companies for page in range(1,26)]
+    test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in sorted(test_companies) for page in range(1,26)]
 
     method = "mlp"
     loss_method = 'mse'
