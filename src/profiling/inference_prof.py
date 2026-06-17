@@ -84,46 +84,52 @@ def llama_attention(messages, layer_idx = 5, head_idx = 0):
     # This function can be used to profile the original LLaMA attention for comparison.
     prof.start()
     model.eval()
-    with FlopCounterMode(display=False) as flop_counter:
-        with record_function("tokenization"):
-            inputs = tokenizer.apply_chat_template(
-                messages,
-                add_generation_prompt=True,
-                tokenize=True,
-                return_tensors="pt",
-                return_dict=True
-            ).to(model.device)
-            
-        # Generate with KV cache - NO output_attentions to save memory
-        with record_function("LLama output generation"):
-            torch.cuda.empty_cache()
-            with torch.no_grad():
-                generation_outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=10,  # Reduced from 21
-                    return_dict_in_generate=True,
-                    use_cache=True,
-                    output_attentions=False,
-                    output_scores=False
-                )
-            query_inputs = {
-            "input_ids": generated_ids,
-            "attention_mask": torch.ones_like(generated_ids),
+
+    with record_function("tokenization"):
+        inputs = tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_tensors="pt",
+            return_dict=True
+        ).to(model.device)
+
+    # Generate with KV cache - NO output_attentions to save memory
+    # (kept outside FlopCounterMode: this is the full multi-head model with
+    # grouped-query attention, which the installed torch.utils.flop_counter's
+    # sdpa_flop_count can't handle and crashes on)
+    with record_function("LLama output generation"):
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            generation_outputs = model.generate(
+                **inputs,
+                max_new_tokens=10,  # Reduced from 21
+                return_dict_in_generate=True,
+                use_cache=True,
+                output_attentions=False,
+                output_scores=False
+            )
+        generated_ids = generation_outputs.sequences[0]
+        query_inputs = {
+            "input_ids": generated_ids.unsqueeze(0),
+            "attention_mask": torch.ones_like(generated_ids).unsqueeze(0),
         }
-        query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
 
-        # Extract full keys/values for the same full generated sequence so generated tokens are covered
-        _, key_head, _, value_head = extract_full_kv(model, query_inputs, layer_idx, head_idx)
+    # extract_query/extract_full_kv each run their own full model(...) forward
+    # pass (same grouped-query attention as above), so they also stay outside
+    # FlopCounterMode.
+    query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
+    _, key_head, _, value_head = extract_full_kv(model, query_inputs, layer_idx, head_idx)
 
-        # Convert to float32 for numerical stability and move to CPU
-        query_head = query_head.to(torch.float32).cpu()
-        key_head = key_head.to(torch.float32).cpu()
-        
-        head_dim = query_head.shape[-1]
+    # Convert to float32 for numerical stability and move to CPU
+    query_head = query_head.to(torch.float32).cpu()
+    key_head = key_head.to(torch.float32).cpu()
+
+    head_dim = query_head.shape[-1]
+    with FlopCounterMode(display=False) as flop_counter:
         with record_function("LLama attention compute"):
-
             full_attn = compute_attention_weights(query_head, key_head, head_dim=head_dim)
-            
+
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof.step()  # Record the step for accurate timing
     prof.stop()
