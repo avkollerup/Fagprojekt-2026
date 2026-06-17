@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import pandas as pd
 from fagprojekt.model import load_model
@@ -19,7 +19,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
     get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method=best_k_sweep, companies=test_companies, path_suffix="_test", want_plot=False)
     df = pd.read_csv(f"reports/figures/SVD/k_tuning_all_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_test.csv")
 
-    best_k_svd = {"method_1": 45, "method_2": 45, "method_3": 45, "method_4": 45}
+    best_k_svd = {"method_1": 62, "method_2": 68, "method_3": 68, "method_4": 74}
     rmse_per_SVD_method = {
         method: df[(df["method"] == method) & (df["k"] == k)]
                 .sort_values(["company", "page"])["rmse"].values
@@ -37,7 +37,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
     rmse_K_means = df_km[df_km["clusters"] == clusters].sort_values(["company", "page"])["rmse"].values
 
     # ------ SVD Nyström ------
-    k_Nystrom = 45
+    k_Nystrom = 1
     get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=[k_Nystrom], companies=test_companies, path_suffix="_test")
     df_nystrom = pd.read_csv(f"reports/figures/SVD_Nystrom/rank_tuning_all_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_test.csv")
     rmse_Nystrom = df_nystrom[df_nystrom["k"] == k_Nystrom].sort_values(["company", "page"])["rmse"].values
@@ -178,3 +178,46 @@ Hokus Pokus vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 K-means vs SVD Nyström: p_raw=1.3387e-11, p_adj=2.8112e-10, reject H0=True
 """
 
+
+# 90 epochs - Hyperparameters from best performance
+"""
+SVD k: {'method_1': 62, 'method_2': 68, 'method_3': 68, 'method_4': 74}
+Hokus Pokus k: 45
+K-means c: 8
+SVD Nyström k: 1
+method_1 (K): mean RMSE=1.819169e-01, std=2.824634e-02
+
+method_2 (V): mean RMSE=1.010494e-01, std=1.347385e-02
+
+method_3 (K & V sep): mean RMSE=1.924873e-01, std=2.557615e-02
+
+method_4 (K & V joint): mean RMSE=2.474830e-01, std=3.001126e-02
+
+Hokus Pokus: mean RMSE=1.540934e-01, std=1.727197e-02
+
+K-means: mean RMSE=7.967738e-01, std=7.047498e-02
+
+SVD Nyström: mean RMSE=7.582330e-01, std=2.687078e-02
+
+method_1 (K) vs method_2 (V): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs method_3 (K & V sep): p_raw=1.2175e-09, p_adj=2.5568e-08, reject H0=True
+method_1 (K) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs Hokus Pokus: p_raw=3.3032e-11, p_adj=6.9367e-10, reject H0=True
+method_1 (K) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs method_3 (K & V sep): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs Hokus Pokus: p_raw=3.4232e-13, p_adj=7.1887e-12, reject H0=True
+method_3 (K & V sep) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+Hokus Pokus vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+K-means vs SVD Nyström: p_raw=2.6737e-06, p_adj=5.6148e-05, reject H0=True
+"""
