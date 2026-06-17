@@ -1,6 +1,4 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
 from fagprojekt.model import (load_model, get_messages, get_kvq)
 from fagprojekt.SVD import (method_1, method_2, method_3, method_4)
 from fagprojekt.Hokus_pokus import (hokus_pokus, train, build_mlp)
@@ -73,7 +71,7 @@ def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k
 
         method = "mlp"
         loss_method = 'mse'
-        num_epochs = 10
+        num_epochs = 30
         
     
         # Train model on the training paths
@@ -137,15 +135,16 @@ if __name__ == "__main__":
     
     model, tokenizer = load_model(want_print=False)
 
-    messages, text, needle = get_messages(f"document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_3.txt", num_tokens=num_tokens)
-    key_head, value_head, query_head = get_kvq(model=model, tokenizer=tokenizer, messages=messages, layer_idx=layer_idx, head_idx=head_idx)
+    for i in range(11):
+        messages, _, _ = get_messages(f"document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_{i+1}.txt", num_tokens=num_tokens)
+        key_head, value_head, query_head = get_kvq(model=model, tokenizer=tokenizer, messages=messages, layer_idx=layer_idx, head_idx=head_idx)
 
-    SVD1(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
-    SVD2(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
-    SVD3(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
-    SVD4(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
+        SVD1(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
+        SVD2(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
+        SVD3(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
+        SVD4(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
 
-    Hokus_Pokus(query_head=query_head, value_head=value_head, key_head=key_head, method="mlp", layer_idx=layer_idx, head_idx=head_idx, k=k, num_tokens=num_tokens, model=model, tokenizer=tokenizer)
-    Nystrom_Attention(query_head=query_head, value_head=value_head, key_head=key_head, k=k, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx)
-    flash_attention(query_head=query_head, value_head=value_head, key_head=key_head)
-    naive_attention(query_head=query_head, value_head=value_head, key_head=key_head)
+        Hokus_Pokus(query_head=query_head, value_head=value_head, key_head=key_head, method="mlp", layer_idx=layer_idx, head_idx=head_idx, k=k, num_tokens=num_tokens, model=model, tokenizer=tokenizer)
+        Nystrom_Attention(query_head=query_head, value_head=value_head, key_head=key_head, k=k, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx)
+        flash_attention(query_head=query_head, value_head=value_head, key_head=key_head)
+        naive_attention(query_head=query_head, value_head=value_head, key_head=key_head)
