@@ -25,7 +25,6 @@ def sample_next_token(logits):
 
 def main():
     print("running")
-    prof.start()
     model, tokenizer = load_model(want_print=True)
     model.eval()
 
@@ -99,12 +98,6 @@ def main():
                 break
     
     generated_ids = torch.cat([input_ids] + generated, dim=-1)
-    torch.cuda.synchronize()
-    prof.step()
-    prof.stop()
-    with open("infernce_metrics.txt", "a") as f:
-        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))
-
     seq_len = input_ids.shape[-1]
     print("Length of input tokens:", seq_len)
     print("\n--- MODEL OUTPUT ---")

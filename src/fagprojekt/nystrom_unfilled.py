@@ -251,7 +251,7 @@ def patch_llama_attention(
 
 
 def set_prefill(model, enabled: bool):
-    with record_function("prefill/First token"):
+    with record_function(f"prefill-{enabled}"):
         for module in model.modules():
             if isinstance(module, SVDNystromLlamaAttention):
                 module.prefill = enabled
