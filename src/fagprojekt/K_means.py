@@ -114,8 +114,8 @@ if __name__ == "__main__":
     model, tokenizer = load_model()
 
     # Finding best cluster number
-    clusters_list = np.linspace(1, 400, 100, dtype=int).tolist()
+    clusters_list = [2**i for i in range(10)]
     companies = ['Barclays', 'BlackRock', 'BNYMellon', 'CapitalOne', 'CitiGroup', 'Cofinimmo', 'CVS', 'DWS', 'Entain']
-    get_rmse_companies_K_means(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, clusters_list=clusters_list, companies=companies, path_suffix="testestestestest", want_plot=True)
+    get_rmse_companies_K_means(model=model, tokenizer=tokenizer, layer_idx=22, head_idx=3, num_tokens=num_tokens, clusters_list=clusters_list, companies=companies, path_suffix="test_with_new_layer", want_plot=True)
 
 
