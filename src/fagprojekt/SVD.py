@@ -19,37 +19,36 @@ def do_SVD(matrix):
     Returns:
         U, singular values, and Vh from the SVD.
     """
-    with record_function("SVD"):
-        U, s, Vt = torch.linalg.svd(matrix, full_matrices=False)
+
+    U, s, Vt = torch.linalg.svd(matrix, full_matrices=False)
 
     return U, s, Vt
 
 
 def method_1(key_head, query_head, value_head, k):
-    """Method 1: Decomposition of the key matrix only"""
-    with record_function('Decomp of key matrix'):        
-        U_K, s_K, Vt_K = do_SVD(key_head)
+    """Method 1: Decomposition of the key matrix only"""      
+    U_K, s_K, Vt_K = do_SVD(key_head)
 
-        k_eff = min(k, s_K.shape[0])
-        K = U_K[:, :k_eff] @ torch.diag(s_K[:k_eff]) @ Vt_K[:k_eff, :]
+    k_eff = min(k, s_K.shape[0])
+    K = U_K[:, :k_eff] @ torch.diag(s_K[:k_eff]) @ Vt_K[:k_eff, :]
 
-        # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
-        M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
-        d = key_head.shape[-1]
-        # Compute attention values
-        attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ value_head
+    # Mask: Strict upper-triangular = -inf above diagonal, 0 on/below diagonal
+    M = torch.triu(torch.full((query_head.shape[0], query_head.shape[0]), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
+    d = key_head.shape[-1]
+    # Compute attention values
+    attn_values = torch.softmax((M + (query_head @ K.T)/ math.sqrt(d)), dim=-1) @ value_head
     return K, attn_values
 
 def decompose_K(key_head, k):
-    with record_function('decompose k'):
-        U_K, s_K, Vt_K = do_SVD(key_head)
 
-        k_eff = min(k, s_K.shape[0])
-        U_k = U_K[:, :k_eff]
-        S_k = torch.diag(s_K[:k_eff])
+    U_K, s_K, Vt_K = do_SVD(key_head)
 
-        A = U_k @ S_k  
-        B = Vt_K[:k_eff, :].T
+    k_eff = min(k, s_K.shape[0])
+    U_k = U_K[:, :k_eff]
+    S_k = torch.diag(s_K[:k_eff])
+
+    A = U_k @ S_k  
+    B = Vt_K[:k_eff, :].T
     
     return A, B
 
