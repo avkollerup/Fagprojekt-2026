@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from torch.profiler import profile, ProfilerActivity, record_function
 
 # Whether or not to use the toy dataset or the regular one
-toy = True
+toy = False
 
 prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
@@ -154,9 +154,9 @@ def main():
         ax_heat.text(-0.08, (needle_min + needle_max) / 2 + 0.5, "needle", color=needle_color, ha="right", va="center", transform=ax_heat.get_yaxis_transform())
 
         if toy:
-            plt.savefig(f"reports/figures/attention_heatmaps/toy_hokuspokus_attention_heatmap_head{head}.png")
+            plt.savefig(f"reports/figures/attention_heatmaps/s_toy_hokuspokus_attention_heatmap_head{head}.png")
         else:
-            plt.savefig(f"reports/figures/attention_heatmaps/hokuspokus_attention_heatmap_head{head}.png")
+            plt.savefig(f"reports/figures/attention_heatmaps/s_hokuspokus_attention_heatmap_head{head}.png")
         plt.close()
      
 

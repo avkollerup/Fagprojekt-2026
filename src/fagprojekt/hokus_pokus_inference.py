@@ -210,7 +210,7 @@ class HokusPokusLlamaAttention(nn.Module):
             allowed = allowed & ((current_token_positions.view(-1, 1) - cache_token_positions.view(1, -1)) < self.local_window)
 
         mask = allowed.view(1, 1, q_len, K.shape[-2])
-        scores = torch.matmul(q, K.transpose(-2, -1)) * self.scaling
+        scores = torch.matmul(q, K.transpose(-2, -1)) *self.scaling
         scores = scores.masked_fill(~mask, float("-inf"))
         weights = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
         return F.scaled_dot_product_attention(q, K, V, attn_mask=mask, dropout_p=0.0, scale=self.scaling), scores, weights, cache_token_positions # llamas attention scaling: self.scaling = 1 / sqrt(head_dim)
@@ -225,7 +225,7 @@ class HokusPokusLlamaAttention(nn.Module):
         # q: [..., q_len, head_dim]
         # a_mat: [..., head_dim, r]
         # b_mat: [..., tokens, r]
-        basis_scores = torch.matmul(q, self.a_mat)  # [..., q_len, r]
+        basis_scores = torch.matmul(q, self.a_mat) # [..., q_len, r]
         
 
         # Optionally transform basis scores with g_theta (a small learned map)
