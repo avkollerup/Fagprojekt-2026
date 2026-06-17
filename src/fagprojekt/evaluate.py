@@ -9,9 +9,6 @@ import itertools
 import numpy as np
 from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
-from torch.profiler import profile, ProfilerActivity, record_function, schedule
-import torch
-prof = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True) 
 
 
 def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs):
@@ -71,7 +68,6 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
-    prof.start()
 
     num_tokens = int(os.environ["NUM_TOKENS"])
     layer_idx = int(os.environ["LAYER_IDX"])
@@ -86,17 +82,45 @@ if __name__ == "__main__":
 
     run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train_companies, test_companies, num_epochs)
 
-    torch.cuda.synchronize()
-    prof.step()
-    prof.stop()
-
-    with open("eval_metrics.txt", "a") as f:
-        f.write(prof.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 
 # 90 epochs, {"method_1": 33, "method_2": 21, "method_3": 37, "method_4": 21}
 """
+method_1 (K): mean RMSE=2.789564e-01, std=3.350157e-02
 
+method_2 (V): mean RMSE=2.977100e-01, std=2.405367e-02
+
+method_3 (K & V sep): mean RMSE=4.013441e-01, std=3.527651e-02
+
+method_4 (K & V joint): mean RMSE=3.299611e-01, std=3.329182e-02
+
+Hokus Pokus: mean RMSE=1.528720e-01, std=1.760102e-02
+
+K-means: mean RMSE=7.970985e-01, std=7.053918e-02
+
+SVD Nyström: mean RMSE=1.199464e+00, std=9.127370e-01
+
+method_1 (K) vs method_2 (V): p_raw=3.3238e-08, p_adj=6.9801e-07, reject H0=True
+method_1 (K) vs method_3 (K & V sep): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs method_3 (K & V sep): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs method_4 (K & V joint): p_raw=4.3268e-13, p_adj=9.0863e-12, reject H0=True
+method_2 (V) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_2 (V) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_3 (K & V sep) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_4 (K & V joint) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+Hokus Pokus vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+K-means vs SVD Nyström: p_raw=1.4399e-11, p_adj=3.0238e-10, reject H0=True
 
 """
 
