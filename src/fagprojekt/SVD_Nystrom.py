@@ -146,6 +146,6 @@ if __name__ == "__main__":
     model, tokenizer = load_model()
 
     # Finding best k
-    k_list = np.linspace(1, 300, 100, dtype=int).tolist()
+    k_list = np.linspace(1, 120, 60, dtype=int).tolist()
     companies = ['Barclays','BlackRock','BNYMellon','CapitalOne','CitiGroup','Cofinimmo','CVS','DWS','Entain']
     get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=k_list, companies=companies, path_suffix="test", want_plot=True)
