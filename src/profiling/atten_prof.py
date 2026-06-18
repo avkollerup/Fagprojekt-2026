@@ -10,14 +10,14 @@ import torch
 from torch.profiler import profile, ProfilerActivity, record_function
 from torch.utils.flop_counter import FlopCounterMode
 
-prof_method_1 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_method_2 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_method_3 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_method_4 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_nystrom = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_hokus_pokus = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_flash_attention = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
-prof_naive_attention = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True, acc_events=True)
+prof_method_1 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_method_2 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_method_3 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_method_4 = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_nystrom = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_hokus_pokus = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_flash_attention = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
+prof_naive_attention = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],schedule = torch.profiler.schedule(wait=0,warmup=0,active=1),profile_memory=True, record_shapes=True)
 
 
 def SVD1(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
@@ -29,6 +29,10 @@ def SVD1(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_1.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Method 1 FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/method_1_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_method_1.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 def SVD2(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_2.start()
@@ -39,6 +43,10 @@ def SVD2(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_2.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Method 2 FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/method_2_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_method_2.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 def SVD3(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_3.start()
@@ -49,6 +57,10 @@ def SVD3(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_3.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Method 3 FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/method_3_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_method_3.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 def SVD4(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_4.start()
@@ -59,6 +71,10 @@ def SVD4(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     prof_method_4.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Method 4 FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/method_4_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_method_4.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 
 def Nystrom_Attention(query_head, value_head, key_head, k, num_tokens, layer_idx, head_idx):
@@ -70,6 +86,10 @@ def Nystrom_Attention(query_head, value_head, key_head, k, num_tokens, layer_idx
     prof_nystrom.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Nystrom Attention FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/nystrom_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_nystrom.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 
 
@@ -116,6 +136,10 @@ def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k
     prof_hokus_pokus.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Hokus Pokus FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/Hokus_Pokus_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_hokus_pokus.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
         
 
 
@@ -123,24 +147,34 @@ def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k
 def flash_attention(query_head, value_head, key_head):
     prof_flash_attention.start()
     with FlopCounterMode(display=False) as flop_counter:
-        result = torch.nn.functional.scaled_dot_product_attention(query_head, key_head, value_head)
+        result = torch.nn.functional.scaled_dot_product_attention(query_head, key_head, value_head, is_causal=True)
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_flash_attention.step()  # Record the step for accurate timing
     prof_flash_attention.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Flash Attention FLOP {i} :  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/flash_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_flash_attention.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 def naive_attention(query_head, value_head, key_head):
     prof_naive_attention.start()
     with FlopCounterMode(display = False) as flop_counter:
+        T = query_head.shape[-2]
+        M = torch.triu(torch.full((T,T), float("-inf"), device=query_head.device, dtype=query_head.dtype),diagonal=1)
         attn_scores = torch.matmul(query_head, key_head.transpose(-2, -1)) / (query_head.size(-1) ** 0.5)
-        attn_weights = torch.nn.functional.softmax(attn_scores, dim=-1)
+        attn_weights = torch.nn.functional.softmax(M + attn_scores, dim=-1)
         result = torch.matmul(attn_weights, value_head)
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_naive_attention.step()  # Record the step for accurate timing
     prof_naive_attention.stop()
     with open(f"reports/figures/profiling/flops.txt", "a") as f:
         f.write(f'Naive Attention FLOP {i}:  {flop_counter.get_total_flops()} \n')
+    with open(f"reports/figures/profiling/naive_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}.txt", "a") as f:
+        f.write(f"--- Iteration {i} ---\n")
+        f.write(prof_naive_attention.key_averages().table(sort_by="self_cpu_time_total"))
+        f.write("\n\n")
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
@@ -166,19 +200,3 @@ if __name__ == "__main__":
         Nystrom_Attention(query_head=query_head, value_head=value_head, key_head=key_head, k=k, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx)
         flash_attention(query_head=query_head, value_head=value_head, key_head=key_head)
         naive_attention(query_head=query_head, value_head=value_head, key_head=key_head)
-
-    # Write each method's cumulative profiler table once, after all iterations,
-    # since each prof_* instance accumulates its own events across the loop (acc_events=True).
-    profilers_by_name = {
-        f"method_1_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_method_1,
-        f"method_2_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_method_2,
-        f"method_3_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_method_3,
-        f"method_4_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_method_4,
-        f"nystrom_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_nystrom,
-        f"Hokus_Pokus_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}": prof_hokus_pokus,
-        f"flash_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}": prof_flash_attention,
-        f"naive_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}": prof_naive_attention,
-    }
-    for name, p in profilers_by_name.items():
-        with open(f"reports/figures/profiling/{name}.txt", "w") as f:
-            f.write(p.key_averages().table(sort_by="self_cpu_time_total"))
