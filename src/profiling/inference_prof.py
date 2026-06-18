@@ -80,7 +80,7 @@ def nystrom_inference(messages, model, tokenizer, layer_idx = 5, lamba = 0.5, lo
         f.write(prof_nystrom.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 
-def llama_attention(messages, layer_idx = 5, head_idx = 0):
+def llama_attention(messages, model, tokenizer, layer_idx = 5, head_idx = 0):
     # This function can be used to profile the original LLaMA attention for comparison.
     prof_llama.start()
     model.eval()
@@ -114,8 +114,8 @@ def llama_attention(messages, layer_idx = 5, head_idx = 0):
 
     # extract_query/extract_full_kv each run their own full model(...) forward
     with record_function("QKV extraction"):
-    query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
-    _, key_head, _, value_head = extract_full_kv(model, query_inputs, layer_idx, head_idx)
+        query, query_head = extract_query(model, query_inputs, layer_idx, head_idx)
+        _, key_head, _, value_head = extract_full_kv(model, query_inputs, layer_idx, head_idx)
 
     # Convert to float32 for numerical stability and move to CPU
     query_head = query_head.to(torch.float32).cpu()
@@ -204,7 +204,7 @@ def hokuspokus_inference(messages, model, tokenizer, layer_idx, lamba, local_win
     torch.cuda.synchronize()
     prof_hokus.step()
     prof_hokus.stop()
-    with open("hokuspokus_inference_metrics.txt", "a") as f:
+    with open("reports/figures/profiling/hokuspokus_inference_metrics.txt", "a") as f:
         f.write(prof_hokus.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         messages, _, _ = get_messages(f"document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_{i+1}.txt", num_tokens=num_tokens)
         key_head, value_head, query_head = get_kvq(model=model, tokenizer=tokenizer, messages=messages, layer_idx=layer_idx, head_idx=head_idx)
 
-        nystrom_inference(messages =messages)
-        llama_attention(messages=messages, layer_idx=layer_idx, head_idx=head_idx)
+        nystrom_inference(messages=messages, model=model, tokenizer=tokenizer, layer_idx=layer_idx)
+        llama_attention(messages=messages, model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx)
         hokuspokus_inference(messages=messages, model=model, tokenizer=tokenizer, layer_idx=layer_idx, lamba=0.5, local_window=128)
 
