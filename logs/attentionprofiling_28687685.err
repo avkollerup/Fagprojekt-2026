@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/work3/s234136/Fagprojekt-2026/src/profiling/atten_prof.py", line 2, in <module>
-    from fagprojekt.model import (load_model, get_messages, get_kvq)
-ModuleNotFoundError: No module named 'fagprojekt'

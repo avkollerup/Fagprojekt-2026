@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/work3/s234136/Fagprojekt-2026/src/profiling/inference_prof.py", line 1, in <module>
-    import torch
-ModuleNotFoundError: No module named 'torch'
