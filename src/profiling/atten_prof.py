@@ -93,40 +93,37 @@ def Nystrom_Attention(query_head, value_head, key_head, k, num_tokens, layer_idx
 
 
 
-def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k, num_tokens, model, tokenizer):
+def train_g_theta(layer_idx, head_idx, k, num_tokens, model, tokenizer):
+    """Train g_theta once on the training paths and return the trained module."""
+    train_companies = sorted(['GoldmanSachs', 'HSBC', 'JPMorgan', 'Kroger', 'NewRiver', 'PNC', 'Reach', 'Sagicor', 'United', 'UPS', 'Vesuvius', 'WoltersKluwer'])
+    test_companies  = sorted(['AIG', 'AmericanAirlines', 'APA'])
+
+    train_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in train_companies for page in range(1,26)]
+    test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in test_companies for page in range(1,26)]
+
+    method = "mlp"
+    loss_method = 'mse'
+    num_epochs = 30
+
+    # Train model on the training paths (NOT inside FlopCounterMode: this runs
+    # full model.generate() with grouped-query attention, which the installed
+    # torch.utils.flop_counter's sdpa_flop_count can't handle and crashes on)
+    g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True, num_epochs=num_epochs)
+
+    # Save model
+    model_path = f"models/g_theta_weights_{method}_k_{k}_epochs_{num_epochs}.pth"
+    torch.save(g_theta.state_dict(), model_path)
+
+    # Load saved model:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    g_theta = build_mlp(k).to(device)
+    g_theta.load_state_dict(torch.load(model_path, map_location=device))
+    g_theta.eval()
+    return g_theta
+
+
+def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k, num_tokens, g_theta):
     prof_hokus_pokus.start()
-    with record_function("Train g_theta"):
-        train_companies = sorted(['GoldmanSachs', 'HSBC', 'JPMorgan', 'Kroger', 'NewRiver', 'PNC', 'Reach', 'Sagicor', 'United', 'UPS', 'Vesuvius', 'WoltersKluwer'])
-        test_companies  = sorted(['AIG', 'AmericanAirlines', 'APA'])
-
-        train_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in train_companies for page in range(1,26)]
-        test_paths = [f'{Path(f"document-haystack/{company}/{company}_25Pages/Text_TextNeedles/{company}_25Pages_TextNeedles")}_page_{page}.txt' for company in test_companies for page in range(1,26)]
-
-        method = "mlp"
-        loss_method = 'mse'
-        num_epochs = 30
-
-        # Train model on the training paths (NOT inside FlopCounterMode: this runs
-        # full model.generate() with grouped-query attention, which the installed
-        # torch.utils.flop_counter's sdpa_flop_count can't handle and crashes on)
-        g_theta = train(train_paths, method=method, layer_idx=layer_idx, head_idx=head_idx, k=k, model=model, tokenizer=tokenizer, loss_method=loss_method, tokens=num_tokens, plot_figure=True, num_epochs=num_epochs)
-
-        # Save model
-        model_path = f"models/g_theta_weights_{method}_k_{k}_epochs_{num_epochs}.pth"
-        torch.save(g_theta.state_dict(), model_path)
-
-        # load the g_theta model weights only once
-        g_theta_loaded = build_mlp(k).to(next(g_theta.parameters()).device)
-        g_theta_loaded.load_state_dict(torch.load(model_path, map_location=next(g_theta.parameters()).device))
-        g_theta_loaded.eval()
-
-        # Load saved model:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model_path = f"models/g_theta_weights_mlp_k_{k}_epochs_{num_epochs}.pth"
-        g_theta = build_mlp(k).to(device)
-        g_theta.load_state_dict(torch.load(model_path, map_location=device))
-        g_theta.eval()
-
     with FlopCounterMode(display=False) as flop_counter:
         with record_function("Hokus Pokus attention"):
             result = hokus_pokus(query_head, value_head, key_head, k, method, g_theta)
@@ -187,6 +184,9 @@ if __name__ == "__main__":
     
     model, tokenizer = load_model(want_print=False)
 
+    # Train g_theta once, outside the per-page loop, instead of retraining on every iteration
+    g_theta = train_g_theta(layer_idx=layer_idx, head_idx=head_idx, k=k, num_tokens=num_tokens, model=model, tokenizer=tokenizer)
+
     for i in range(11):
         messages, _, _ = get_messages(f"document-haystack/AIG/AIG_25Pages/Text_TextNeedles/AIG_25Pages_TextNeedles_page_{i+1}.txt", num_tokens=num_tokens)
         key_head, value_head, query_head = get_kvq(model=model, tokenizer=tokenizer, messages=messages, layer_idx=layer_idx, head_idx=head_idx)
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         SVD3(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
         SVD4(key_head=key_head, query_head=query_head, value_head=value_head, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k)
 
-        Hokus_Pokus(query_head=query_head, value_head=value_head, key_head=key_head, method="mlp", layer_idx=layer_idx, head_idx=head_idx, k=k, num_tokens=num_tokens, model=model, tokenizer=tokenizer)
+        Hokus_Pokus(query_head=query_head, value_head=value_head, key_head=key_head, method="mlp", layer_idx=layer_idx, head_idx=head_idx, k=k, num_tokens=num_tokens, g_theta=g_theta)
         Nystrom_Attention(query_head=query_head, value_head=value_head, key_head=key_head, k=k, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx)
         flash_attention(query_head=query_head, value_head=value_head, key_head=key_head)
         naive_attention(query_head=query_head, value_head=value_head, key_head=key_head)
