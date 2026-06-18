@@ -1,0 +1,65 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28687685: <attention_profiling> in cluster <dcc> Exited
+
+Job <attention_profiling> was submitted from host <n-62-12-19> by user <s234136> in cluster <dcc> at Wed Jun 17 20:36:49 2026
+Job was executed on host(s) <4*n-62-12-24>, in queue <gpua100>, as user <s234136> in cluster <dcc> at Thu Jun 18 01:52:22 2026
+</zhome/e7/8/204628> was used as the home directory.
+</work3/s234136/Fagprojekt-2026> was used as the working directory.
+Started at Thu Jun 18 01:52:22 2026
+Terminated at Thu Jun 18 01:52:24 2026
+Results reported at Thu Jun 18 01:52:24 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J attention_profiling
+#BSUB -q gpua100
+#BSUB -n 4
+#BSUB -R "rusage[mem=8GB] span[hosts=1]"
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 06:00
+#BSUB -o logs/attentionprofiling_%J.out
+#BSUB -e logs/attentionprofiling_%J.err
+
+source /work3/s234136/Fagprojekt-2026/.venv/bin/activate
+cd /work3/s234136/Fagprojekt-2026
+
+mkdir -p logs
+mkdir -p reports/figures/profiling
+mkdir -p models
+
+export NUM_TOKENS=300
+export LAYER_IDX=5
+export HEAD_IDX=1
+
+
+python src/profiling/atten_prof.py
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   0.37 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   2 sec.
+    Turnaround time :                            18935 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/attentionprofiling_28687685.err> for stderr output of this job.
+
