@@ -27,7 +27,7 @@ def nystrom_inference(messages, model, tokenizer, layer_idx = 5, lamba = 0.5, lo
         patch_llama_attention(
             model=model,
             layers="all",
-            rank=60,
+            rank=45,
             local_window=local_window,
             eps=1e-4,
             lamba=lamba,
