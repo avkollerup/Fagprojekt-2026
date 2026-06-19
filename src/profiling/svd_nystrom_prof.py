@@ -18,7 +18,7 @@ def Nystrom_Attention(query_head, value_head, key_head, k, num_tokens, layer_idx
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_nystrom.step()  # Record the step for accurate timing
     prof_nystrom.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_nystrom.txt", "a") as f:
         f.write(f'Nystrom Attention FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/nystrom_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -33,7 +33,7 @@ def flash_attention(query_head, value_head, key_head):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_flash_attention.step()  # Record the step for accurate timing
     prof_flash_attention.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_nystrom.txt", "a") as f:
         f.write(f'Flash Attention FLOP {i} :  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/flash_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -51,7 +51,7 @@ def naive_attention(query_head, value_head, key_head):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_naive_attention.step()  # Record the step for accurate timing
     prof_naive_attention.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_nystrom.txt", "a") as f:
         f.write(f'Naive Attention FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/naive_attention_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")

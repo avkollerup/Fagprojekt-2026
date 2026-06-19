@@ -21,7 +21,7 @@ def SVD1(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_method_1.step()  # Record the step for accurate timing
     prof_method_1.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_kmeans.txt", "a") as f:
         f.write(f'Method 1 FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/method_1_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -35,7 +35,7 @@ def SVD2(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_method_2.step()  # Record the step for accurate timing
     prof_method_2.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_kmeans.txt", "a") as f:
         f.write(f'Method 2 FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/method_2_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -49,7 +49,7 @@ def SVD3(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_method_3.step()  # Record the step for accurate timing
     prof_method_3.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_kmeans.txt", "a") as f:
         f.write(f'Method 3 FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/method_3_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -63,7 +63,7 @@ def SVD4(key_head, query_head, value_head, num_tokens, layer_idx, head_idx, k):
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_method_4.step()  # Record the step for accurate timing
     prof_method_4.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_kmeans.txt", "a") as f:
         f.write(f'Method 4 FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/method_4_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
@@ -78,7 +78,7 @@ def KMeans_Attention(query_head, value_head, key_head, num_tokens, layer_idx, he
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_kmeans.step()  # Record the step for accurate timing
     prof_kmeans.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_svd_kmeans.txt", "a") as f:
         f.write(f'K-means FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/kmeans_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_clusters_{clusters}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")

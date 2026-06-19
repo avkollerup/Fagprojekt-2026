@@ -31,7 +31,7 @@ def Hokus_Pokus(query_head, value_head, key_head, method, layer_idx, head_idx, k
     torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_hokus_pokus.step()  # Record the step for accurate timing
     prof_hokus_pokus.stop()
-    with open(f"reports/figures/profiling/flops.txt", "a") as f:
+    with open(f"reports/figures/profiling/flops_hokus_pokus.txt", "a") as f:
         f.write(f'Hokus Pokus FLOP {i}:  {flop_counter.get_total_flops()} \n')
     with open(f"reports/figures/profiling/Hokus_Pokus_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_k_{k}.txt", "a") as f:
         f.write(f"--- Iteration {i} ---\n")
