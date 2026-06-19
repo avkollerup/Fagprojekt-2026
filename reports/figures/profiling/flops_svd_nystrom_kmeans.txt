@@ -1,0 +1,88 @@
+Method 1 FLOP 0:  15241628 
+Method 2 FLOP 0:  17701688 
+Method 3 FLOP 0:  17061788 
+Method 4 FLOP 0:  15241628 
+Nystrom Attention FLOP 0:  7799040 
+Flash Attention FLOP 0 :  12781568 
+Naive Attention FLOP 0:  12781568 
+K-means FLOP 0:  3640320 
+Method 1 FLOP 1:  46332572 
+Method 2 FLOP 1:  50785592 
+Method 3 FLOP 1:  49627292 
+Method 4 FLOP 1:  46332572 
+Nystrom Attention FLOP 1:  13697280 
+Flash Attention FLOP 1 :  41879552 
+Naive Attention FLOP 1:  41879552 
+K-means FLOP 1:  6589440 
+Method 1 FLOP 2:  55370132 
+Method 2 FLOP 2:  60259112 
+Method 3 FLOP 2:  58987412 
+Method 4 FLOP 2:  55370132 
+Nystrom Attention FLOP 2:  14987520 
+Flash Attention FLOP 2 :  50481152 
+Naive Attention FLOP 2:  50481152 
+K-means FLOP 2:  7234560 
+Method 1 FLOP 3:  54697968 
+Method 2 FLOP 3:  59555808 
+Method 3 FLOP 3:  58292208 
+Method 4 FLOP 3:  54697968 
+Nystrom Attention FLOP 3:  14895360 
+Flash Attention FLOP 3 :  49840128 
+Naive Attention FLOP 3:  49840128 
+K-means FLOP 3:  7188480 
+Method 1 FLOP 4:  55707750 
+Method 2 FLOP 4:  60612300 
+Method 3 FLOP 4:  59336550 
+Method 4 FLOP 4:  55707750 
+Nystrom Attention FLOP 4:  15033600 
+Flash Attention FLOP 4 :  50803200 
+Naive Attention FLOP 4:  50803200 
+K-means FLOP 4:  7257600 
+Method 1 FLOP 5:  54697968 
+Method 2 FLOP 5:  59555808 
+Method 3 FLOP 5:  58292208 
+Method 4 FLOP 5:  54697968 
+Nystrom Attention FLOP 5:  14895360 
+Flash Attention FLOP 5 :  49840128 
+Naive Attention FLOP 5:  49840128 
+K-means FLOP 5:  7188480 
+Method 1 FLOP 6:  55707750 
+Method 2 FLOP 6:  60612300 
+Method 3 FLOP 6:  59336550 
+Method 4 FLOP 6:  55707750 
+Nystrom Attention FLOP 6:  15033600 
+Flash Attention FLOP 6 :  50803200 
+Naive Attention FLOP 6:  50803200 
+K-means FLOP 6:  7257600 
+Method 1 FLOP 7:  54697968 
+Method 2 FLOP 7:  59555808 
+Method 3 FLOP 7:  58292208 
+Method 4 FLOP 7:  54697968 
+Nystrom Attention FLOP 7:  14895360 
+Flash Attention FLOP 7 :  49840128 
+Naive Attention FLOP 7:  49840128 
+K-means FLOP 7:  7188480 
+Method 1 FLOP 8:  54363422 
+Method 2 FLOP 8:  59205692 
+Method 3 FLOP 8:  57946142 
+Method 4 FLOP 8:  54363422 
+Nystrom Attention FLOP 8:  14849280 
+Flash Attention FLOP 8 :  49521152 
+Naive Attention FLOP 8:  49521152 
+K-means FLOP 8:  7165440 
+Method 1 FLOP 9:  54697968 
+Method 2 FLOP 9:  59555808 
+Method 3 FLOP 9:  58292208 
+Method 4 FLOP 9:  54697968 
+Nystrom Attention FLOP 9:  14895360 
+Flash Attention FLOP 9 :  49840128 
+Naive Attention FLOP 9:  49840128 
+K-means FLOP 9:  7188480 
+Method 1 FLOP 10:  56046392 
+Method 2 FLOP 10:  60966512 
+Method 3 FLOP 10:  59686712 
+Method 4 FLOP 10:  56046392 
+Nystrom Attention FLOP 10:  15079680 
+Flash Attention FLOP 10 :  51126272 
+Naive Attention FLOP 10:  51126272 
+K-means FLOP 10:  7280640 
