@@ -83,7 +83,7 @@ def nystrom_inference(messages, model, tokenizer, layer_idx = 5, lamba = 0.5, lo
     _cuda_sync()
     prof_nystrom.step()
     prof_nystrom.stop()
-    with open(f'reports/figures/profiling/nystrom_inference_metrics.txt', "a") as f:
+    with open(f'reports/figures/profiling/nystrom_inference.txt', "a") as f:
         f.write(prof_nystrom.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 

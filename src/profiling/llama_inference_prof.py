@@ -68,7 +68,7 @@ def llama_attention(messages, model, tokenizer, layer_idx = 5, head_idx = 0):
     _cuda_sync()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_llama.step()  # Record the step for accurate timing
     prof_llama.stop()
-    with open(f"reports/figures/profiling/llama_attention.txt", "a") as f:
+    with open(f"reports/figures/profiling/llama_attention_inference.txt", "a") as f:
         f.write(prof_llama.key_averages().table(sort_by="self_cpu_time_total"))
 
 

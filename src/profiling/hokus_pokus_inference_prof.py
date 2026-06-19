@@ -90,7 +90,7 @@ def hokuspokus_inference(messages, model, tokenizer, layer_idx, lamba, local_win
     _cuda_sync()
     prof_hokus.step()
     prof_hokus.stop()
-    with open("reports/figures/profiling/hokuspokus_inference_metrics.txt", "a") as f:
+    with open("reports/figures/profiling/hokuspokus_inference.txt", "a") as f:
         f.write(prof_hokus.key_averages().table(sort_by="cuda_time_total", row_limit=20))
 
 
