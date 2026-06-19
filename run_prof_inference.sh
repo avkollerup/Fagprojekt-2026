@@ -2,7 +2,7 @@
 #BSUB -J prof_inference
 #BSUB -q gpua100
 #BSUB -n 4
-#BSUB -R "rusage[mem=16GB] span[hosts=1]"
+#BSUB -R "rusage[mem=32GB] span[hosts=1]"
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 8:00
 #BSUB -o logs/prof_inference_%J.out
