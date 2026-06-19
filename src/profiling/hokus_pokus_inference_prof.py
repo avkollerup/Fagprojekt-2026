@@ -2,7 +2,7 @@ import torch
 import os
 from torch.profiler import profile, record_function, ProfilerActivity
 from fagprojekt.model import load_model, get_messages
-from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, build_full_attention_matrix)
+from fagprojekt.hokus_pokus_inference import (patch_llama_attention, set_prefill, build_full_attention_matrix)
 from fagprojekt.test_hokus_pokus_inference import clear_hokuspokus, build_mlp, sample_next_token
 
 
