@@ -94,7 +94,7 @@ if __name__ == "__main__":
     layer_idx = int(os.environ["LAYER_IDX"])
     head_idx = int(os.environ["HEAD_IDX"])
     k = 45
-    clusters = 45
+    clusters = 8
 
     model, tokenizer = load_model(want_print=False)
 
