@@ -8,9 +8,20 @@ from fagprojekt.test_svd_nystrom_inference import sample_next_token
 from fagprojekt.test_hokus_pokus_inference import clear_hokuspokus, build_mlp, sample_next_token
 
 
-prof_nystrom = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True)
-prof_llama = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True)
-prof_hokus = profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True)
+# Some GPU node allocations on the cluster come up with no CUDA device visible;
+# fall back to CPU-only profiling instead of crashing on torch.cuda.synchronize().
+_CUDA = torch.cuda.is_available()
+_ACTIVITIES = [ProfilerActivity.CPU] + ([ProfilerActivity.CUDA] if _CUDA else [])
+
+
+def _cuda_sync():
+    if _CUDA:
+        torch.cuda.synchronize()
+
+
+prof_nystrom = profile(activities=_ACTIVITIES, profile_memory=True, record_shapes=True)
+prof_llama = profile(activities=_ACTIVITIES, profile_memory=True, record_shapes=True)
+prof_hokus = profile(activities=_ACTIVITIES, profile_memory=True, record_shapes=True)
 
 def nystrom_inference(messages, model, tokenizer, layer_idx = 5, lamba = 0.5, local_window = 128):
     prof_nystrom.start()
@@ -73,7 +84,7 @@ def nystrom_inference(messages, model, tokenizer, layer_idx = 5, lamba = 0.5, lo
                 if value_range < 1e-4:
                     value_range = 1e-4
 
-    torch.cuda.synchronize()
+    _cuda_sync()
     prof_nystrom.step()
     prof_nystrom.stop()
     with open(f'reports/figures/profiling/nystrom_inference_metrics.txt', "a") as f:
@@ -96,7 +107,8 @@ def llama_attention(messages, model, tokenizer, layer_idx = 5, head_idx = 0):
 
     # Generate with KV cache - NO output_attentions to save memory
     with record_function("LLama output generation"):
-        torch.cuda.empty_cache()
+        if _CUDA:
+            torch.cuda.empty_cache()
         with torch.no_grad():
             generation_outputs = model.generate(
                 **inputs,
@@ -126,7 +138,7 @@ def llama_attention(messages, model, tokenizer, layer_idx = 5, head_idx = 0):
     with record_function("LLama attention compute"):
         full_attn = compute_attention_weights(query_head, key_head, head_dim=head_dim)
 
-    torch.cuda.synchronize()  # Ensure all CUDA operations are finished before stopping the profiler
+    _cuda_sync()  # Ensure all CUDA operations are finished before stopping the profiler
     prof_llama.step()  # Record the step for accurate timing
     prof_llama.stop()
     with open(f"reports/figures/profiling/llama_attention.txt", "a") as f:
@@ -201,7 +213,7 @@ def hokuspokus_inference(messages, model, tokenizer, layer_idx, lamba, local_win
             value_range = torch.quantile(torch.abs(attn_matrix), 0.995).item()
             if value_range < 1e-4:
                 value_range = 1e-4
-    torch.cuda.synchronize()
+    _cuda_sync()
     prof_hokus.step()
     prof_hokus.stop()
     with open("reports/figures/profiling/hokuspokus_inference_metrics.txt", "a") as f:
