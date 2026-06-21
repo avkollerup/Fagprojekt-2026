@@ -19,7 +19,7 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
     get_rmse_companies_SVD(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, thresholds_per_method=best_k_sweep, companies=test_companies, path_suffix="_test", want_plot=False)
     df = pd.read_csv(f"reports/figures/SVD/k_tuning_all_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_test.csv")
 
-    best_k_svd = {"method_1": 62, "method_2": 68, "method_3": 68, "method_4": 74}
+    best_k_svd = {"method_1": 45, "method_2": 45, "method_3": 45, "method_4": 45}
     rmse_per_SVD_method = {
         method: df[(df["method"] == method) & (df["k"] == k)]
                 .sort_values(["company", "page"])["rmse"].values
@@ -31,13 +31,13 @@ def run_evaluation_rmse(model, tokenizer, layer_idx, head_idx, num_tokens, train
     rmse_Hokus_pokus = get_rmse_companies_Hokus_Pokus(model=model, tokenizer=tokenizer, num_tokens=num_tokens, layer_idx=layer_idx, head_idx=head_idx, k=k_hp, train_companies=train_companies, test_companies=test_companies, num_epochs=num_epochs)
 
     # ------ K-means ------
-    clusters = 8
+    clusters = 45
     get_rmse_companies_K_means(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, clusters_list=[clusters], companies=test_companies, path_suffix="_test")
     df_km = pd.read_csv(f"reports/figures/K_means/clusters_tuning_all_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_test.csv")
     rmse_K_means = df_km[df_km["clusters"] == clusters].sort_values(["company", "page"])["rmse"].values
 
     # ------ SVD Nyström ------
-    k_Nystrom = 1
+    k_Nystrom = 45
     get_rmse_companies_Nystrom(model=model, tokenizer=tokenizer, layer_idx=layer_idx, head_idx=head_idx, num_tokens=num_tokens, k_list=[k_Nystrom], companies=test_companies, path_suffix="_test")
     df_nystrom = pd.read_csv(f"reports/figures/SVD_Nystrom/rank_tuning_all_layer_{layer_idx}_head_{head_idx}_tokens_{num_tokens}_test.csv")
     rmse_Nystrom = df_nystrom[df_nystrom["k"] == k_Nystrom].sort_values(["company", "page"])["rmse"].values
@@ -135,27 +135,27 @@ K-means vs SVD Nyström: p_raw=1.9375e-05, p_adj=4.0688e-04, reject H0=True
 
 """
 
-# 90 epochs - k = 45
+# 90 epochs - k = 45, Kmeans = 45
 """
 SVD k: {'method_1': 45, 'method_2': 45, 'method_3': 45, 'method_4': 45}
 Hokus Pokus k: 45
-K-means c: 8
+K-means c: 45
 SVD Nyström k: 45
-method_1 (K): mean RMSE=2.389466e-01, std=3.042356e-02
+method_1 (K): mean RMSE=2.394130e-01, std=3.058963e-02
 
-method_2 (V): mean RMSE=1.809139e-01, std=1.731272e-02
+method_2 (V): mean RMSE=1.807968e-01, std=1.755639e-02
 
-method_3 (K & V sep): mean RMSE=2.812104e-01, std=2.928338e-02
+method_3 (K & V sep): mean RMSE=2.815417e-01, std=2.944636e-02
 
-method_4 (K & V joint): mean RMSE=3.075761e-01, std=3.245176e-02
+method_4 (K & V joint): mean RMSE=3.079732e-01, std=3.248283e-02
 
-Hokus Pokus: mean RMSE=1.534860e-01, std=1.804179e-02
+Hokus Pokus: mean RMSE=1.537767e-01, std=1.715994e-02
 
-K-means: mean RMSE=7.868379e-01, std=7.132107e-02
+K-means: mean RMSE=7.874794e-01, std=6.818255e-02
 
-SVD Nyström: mean RMSE=1.271568e+00, std=1.144684e+00
+SVD Nyström: mean RMSE=1.186585e+00, std=9.018911e-01
 
-method_1 (K) vs method_2 (V): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
+method_1 (K) vs method_2 (V): p_raw=5.4981e-14, p_adj=1.1546e-12, reject H0=True
 method_1 (K) vs method_3 (K & V sep): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_1 (K) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_1 (K) vs Hokus Pokus: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
@@ -163,7 +163,7 @@ method_1 (K) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_1 (K) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_2 (V) vs method_3 (K & V sep): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_2 (V) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
-method_2 (V) vs Hokus Pokus: p_raw=5.9041e-13, p_adj=1.2399e-11, reject H0=True
+method_2 (V) vs Hokus Pokus: p_raw=1.2743e-12, p_adj=2.6761e-11, reject H0=True
 method_2 (V) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_2 (V) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 method_3 (K & V sep) vs method_4 (K & V joint): p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
@@ -175,7 +175,7 @@ method_4 (K & V joint) vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0
 method_4 (K & V joint) vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 Hokus Pokus vs K-means: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
 Hokus Pokus vs SVD Nyström: p_raw=5.2804e-14, p_adj=1.1089e-12, reject H0=True
-K-means vs SVD Nyström: p_raw=1.3387e-11, p_adj=2.8112e-10, reject H0=True
+K-means vs SVD Nyström: p_raw=1.6638e-12, p_adj=3.4939e-11, reject H0=True
 """
 
 
