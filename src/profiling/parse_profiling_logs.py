@@ -10,15 +10,9 @@ from pathlib import Path
 DIR = Path(__file__).resolve().parents[2] / "reports" / "figures" / "profiling"
 
 FILES = {
-    "Naive Attention": "naive_attention_layer_5_head_1_tokens_200.txt",
-    "Flash Attention": "flash_attention_layer_5_head_1_tokens_200.txt",
-    "SVD Nystrom": "nystrom_attention_layer_5_head_1_tokens_200_k_45.txt",
-    "K-means": "kmeans_layer_5_head_1_tokens_200_clusters_45.txt",
-    "Hokus Pokus": "Hokus_Pokus_layer_5_head_1_tokens_200_k_45.txt",
-    "Method 1 (K)": "method_1_layer_5_head_1_tokens_200_k_45.txt",
-    "Method 2 (V)": "method_2_layer_5_head_1_tokens_200_k_45.txt",
-    "Method 3 (KV sep.)": "method_3_layer_5_head_1_tokens_200_k_45.txt",
-    "Method 4 (KV joint)": "method_4_layer_5_head_1_tokens_200_k_45.txt",
+    "Llama Attention": "llama_attention_inference.txt",
+    "Nystrom": "nystrom_inference.txt",
+    "Hokus Pokus": "hokuspokus_inference.txt"
 }
 
 UNIT_MULT = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
@@ -69,12 +63,14 @@ def fmt_mem(b):
 
 
 if __name__ == "__main__":
-    header = f"{'Method':<20}{'n':>3}{'CPU med(ms)':>13}{'CUDA med(us)':>14}{'Peak CUDA mem':>15}"
+    header = f"{'Method':<20}{'n':>3}{'CPU med(ms)':>13}{'CPU std(ms)':>13}{'CUDA med(us)':>14}{'CUDA std(us)':>14}{'Peak CUDA mem':>15}"
     print(header)
     for name, fname in FILES.items():
         cpu_ms, cuda_ms, mem_b = parse_file(DIR / fname)
         cuda_us = [x * 1000 for x in cuda_ms]
-        cpu_med = statistics.median(cpu_ms)
-        cuda_med = statistics.median(cuda_us)
+        cpu_med,cpu_std = (statistics.median(cpu_ms), statistics.stdev(cpu_ms))
+        cuda_med,cuda_std = (statistics.median(cuda_us), statistics.stdev(cuda_us))
         mem_med = statistics.median(mem_b) if mem_b else 0
-        print(f"{name:<20}{len(cpu_ms):>3}{cpu_med:>13.3f}{cuda_med:>14.2f}{fmt_mem(mem_med):>15}")
+        print(f"{name:<20}{len(cpu_ms):>3}{cpu_med:>13.3f}{cpu_std:>13.3f}{cuda_med:>14.2f}{cuda_std:>14.2f}{fmt_mem(mem_med):>15}")
+
+

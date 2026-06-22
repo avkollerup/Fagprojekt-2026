@@ -2,7 +2,7 @@ import torch
 import os
 from torch.profiler import profile, record_function, ProfilerActivity
 from fagprojekt.model import load_model, get_messages
-from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom, build_full_attention_matrix)
+from fagprojekt.svd_nystrom import (patch_llama_attention, set_prefill, clear_nystrom, build_full_attention_matrix)
 from fagprojekt.test_svd_nystrom_inference import sample_next_token
 
 
