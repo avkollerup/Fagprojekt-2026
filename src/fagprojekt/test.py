@@ -1,7 +1,7 @@
 import torch
 
 from fagprojekt.model import load_model
-from fagprojekt.nystrom_unfilled import (
+from fagprojekt.svd_nystrom import (
     patch_llama_attention,
     set_prefill,
     clear_nystrom,

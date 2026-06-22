@@ -2,7 +2,7 @@ import torch
 import seaborn as sns
 import numpy as np
 from fagprojekt.model import (load_model, get_messages)
-from fagprojekt.nystrom_unfilled import (patch_llama_attention, set_prefill, clear_nystrom,build_full_attention_matrix)
+from fagprojekt.svd_nystrom import (patch_llama_attention, set_prefill, clear_nystrom,build_full_attention_matrix)
 from fagprojekt.head_level_eval_utils import find_token_positions, get_random_messages
 import matplotlib.pyplot as plt
 from torch.profiler import profile, ProfilerActivity, record_function
