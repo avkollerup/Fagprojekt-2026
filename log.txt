@@ -1,131 +1,132 @@
-6641992 - Julie Nguyen, 20 seconds ago : New best hyperparameter eval run
-31b5882 - Julie Nguyen, 58 minutes ago : evaluate on c=45 K-means for fairness
-4d6c97f - Julie Nguyen, 3 hours ago : delete unused file
-e2778c5 - Julie Nguyen, 2 days ago : make git logs
-e3e7ddc - Julie Nguyen, 2 days ago : hokus pokus inference done
-f2cd6d8 - Julie Nguyen, 2 days ago : clean up unused files
-c42f764 - Julie Nguyen, 2 days ago : import functions from correct file
-e7ed162 - Julie Nguyen, 2 days ago : nystrom inference results
-d1f0ebd - Julie Nguyen, 2 days ago : change output path
-dd9f6ed - Julie Nguyen, 2 days ago : merge attention profs back into one file. New results
-bf5723f - Julie Nguyen, 2 days ago : attention hokus pokus profiling results
-5139b89 - Julie Nguyen, 2 days ago : delete old files
-d1a2a83 - Julie Nguyen, 2 days ago : results attention profiling svd, nystrom, kmeans
-37fbf62 - Julie Nguyen, 2 days ago : remove scheduler in profiling
-29cef79 - Julie Nguyen, 2 days ago : results SVD Nystrom, naive attention, flash attention
-a8ce645 - Julie Nguyen, 2 days ago : results SVD methods + kmeans
-a20b413 - Julie Nguyen, 2 days ago : make seperate flop files
-37cd5ac - Julie Nguyen, 2 days ago : clusters = 8
-8a148a2 - Julie Nguyen, 2 days ago : run nystrom inference with k=45
-d47dfbd - Julie Nguyen, 2 days ago : split profiling attention and inference into sub files. Make jobscripts
-a8e037e - elisabethnielsen, 2 days ago : SVD-Nystöm med k=1
-1aa665c - Julie Nguyen, 2 days ago : ask for 4 x 32 GB
-d788e55 - Julie Nguyen, 2 days ago : updated batch scripts
-cc3f899 - Julie Nguyen, 3 days ago : put training g train outside for loop
-4dadc25 - Julie Nguyen, 3 days ago : delete unsued files
-54fe0eb - Julie Nguyen, 3 days ago : new SVD nystrom plot
-6598e2b - Julie Nguyen, 3 days ago : delete old logs
-5072e41 - Julie Nguyen, 3 days ago : fix bugs
-59c9bf3 - avkollerup, 3 days ago : Hokus Pokus Inference added to profiling
-e0e8ab7 - Julie Nguyen, 3 days ago : save table per iteration
-d5720ec - Julie Nguyen, 4 days ago : fixing bugs
-9cca096 - Julie Nguyen, 4 days ago : different k plot svd nyström
-68172e2 - Julie Nguyen, 4 days ago : different c run for kmeans
-916b7e5 - avkollerup, 4 days ago : batch scribts
-d6315bd - avkollerup, 4 days ago : profiling finished, debuged, and flop count added
-122d881 - elisabethnielsen, 4 days ago : Run hokus pokus again
-cbf9059 - elisabethnielsen, 4 days ago : Hokus Pokus Inference
-b0a96fc - Julie Nguyen, 4 days ago : last last run of eval
-72c04f9 - Julie Nguyen, 4 days ago : final eval results
-bc6b02a - Liv, 4 days ago : deleted old profiling files
-e190ec5 - Liv, 4 days ago : made batch script to run profiling
-1ce5b8f - Julie Nguyen, 4 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-b4b526d - Julie Nguyen, 4 days ago : try to fix numerical instability in SVD Nyström
-eda5220 - Liv, 4 days ago : profiling for all methods
-b4c2f14 - elisabethnielsen, 4 days ago : causal llama attention matrix på rigtige haystacks
-5692c5f - avkollerup, 4 days ago : failed to save profiling : (
-c1cdc25 - Julie Nguyen, 4 days ago : delete profiling from kmeans
-f5840a0 - Julie Nguyen, 4 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-3d319b3 - Julie Nguyen, 4 days ago : more eval results
-b1efab5 - Julie Nguyen, 4 days ago : cluster analysis
-8d00004 - elisabethnielsen, 5 days ago : lama attention på toy datasæt
-2310e8f - avkollerup, 5 days ago : extra profiling
-11c6e5c - Julie Nguyen, 5 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-b695204 - Julie Nguyen, 5 days ago : include SVD Nyström in eval
-653ff24 - elisabethnielsen, 5 days ago : llama attention matrix, ved ikke om det virker, kan ikke
-055819a - Julie Nguyen, 5 days ago : kmeans relative RMSE over cluster list analysis
-f60ef13 - Julie Nguyen, 5 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-6a767d0 - Julie Nguyen, 5 days ago : cap max num of clusters to seq len
-a494970 - elisabethnielsen, 5 days ago : llama attention matrix (ikke færdig, kan ikke køre det)
-addbfc6 - Julie Nguyen, 5 days ago : delete unused file
-dbe16b8 - Julie Nguyen, 5 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-99fff66 - Julie Nguyen, 5 days ago : remove unsused plots. Plot relative RMSE
-6c0214a - Julie Nguyen, 5 days ago : K-means analysis over cluster list
-b8de044 - Julie Nguyen, 5 days ago : load model from saved weights
-5179f16 - Julie Nguyen, 5 days ago : new eval run
-71c6122 - elisabethnielsen, 5 days ago : toy datasæt attention matrix
-bb5fe5c - avkollerup, 5 days ago : profiling in eval
-bf3fddd - avkollerup, 5 days ago : Merge branch 'profiling'
-49ae601 - avkollerup, 6 days ago : profiling
-d165ba5 - Liv, 5 days ago : changed to get_random_messages in head_level_eval
-5143194 - Julie Nguyen, 6 days ago : uv sync
-f0e0294 - Julie Nguyen, 6 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-66a24a7 - Julie Nguyen, 6 days ago : big evaluation run of the 6 methods
-dd1dd5d - elisabethnielsen, 6 days ago : Merge remote-tracking branch 'origin/main' into attention_matrix
-1c1e18b - elisabethnielsen, 6 days ago : færdige (forhåbentlig) attention matricer
-8fa7072 - elisabethnielsen, 7 days ago : mere arbejde på attention matrix
-15a36df - Julie Nguyen, 8 days ago : submit for different number of epochs
-16a3d83 - Julie Nguyen, 8 days ago : update eval job name
-0580f74 - Julie Nguyen, 8 days ago : batch script to run evaluation
-52c612b - Julie Nguyen, 8 days ago : run training over epochs and with early stopping. Save model and plot with epoch num in path
-7a3800b - Julie Nguyen, 9 days ago : print extra line
-c390c5e - Julie Nguyen, 9 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-8f77278 - Julie Nguyen, 9 days ago : fix plotting y axis
-e465373 - Julie Nguyen, 9 days ago : results for statistical test
-045cd9f - Julie Nguyen, 9 days ago : SVD results
-f2b293c - Julie Nguyen, 9 days ago : trained g (1 pass)
-0ec77c7 - Julie Nguyen, 9 days ago : Do Wilcoxon test on the RMSE values
-59e8d88 - Julie Nguyen, 9 days ago : make function to get RMSE values from each method over test prompts
-1ea3da7 - Julie Nguyen, 9 days ago : Add statsmodels package
-d9ef07d - Julie Nguyen, 9 days ago : New results
-07821ef - elisabethnielsen, 9 days ago : forsøg på attention matrix
-1549b2b - Liv, 9 days ago : Changed names of A and B in SVD-Nystrom
-de67d06 - avkollerup, 9 days ago : profiling needs to be in other files
-e4736c1 - avkollerup, 9 days ago : Beginning steps of profiling - added to nystrom
-44eaa48 - Julie Nguyen, 9 days ago : new results. Rename PCA to SVD (because we dont center the matrix)
-eb31011 - Liv, 9 days ago : diverse test af inferens
-4d29521 - elisabethnielsen, 10 days ago : finder bedste k. Spoiler, det er 45
-d7855f7 - Julie Nguyen, 11 days ago : new SVD results and plots
-5ec7412 - Julie Nguyen, 11 days ago : fix plot title and ylabel
-6145e77 - Julie Nguyen, 11 days ago : new plot
-e6dffaa - Julie Nguyen, 11 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-7547e62 - Julie Nguyen, 11 days ago : analysis across companies
-145b0bd - elisabethnielsen, 11 days ago : resultater fra 9-fold CV på hokus pokus for k
-727e2d5 - Julie Nguyen, 11 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-6287bd0 - Julie Nguyen, 11 days ago : analysis across companies
-7dd0226 - elisabethnielsen, 11 days ago : 9-fold CV på hokus pokus for at bestemme bedste k
-369746d - Liv, 11 days ago : tilføjede Anders' dokument
-db72ffa - elisabethnielsen, 11 days ago : sqrt
-ec00dc8 - Julie Nguyen, 11 days ago : Nyströmer
-30f0b37 - Liv, 11 days ago : tilføjede inference for hokus pokus
-ab9f15a - Julie Nguyen, 12 days ago : delete old threshold code
-2219e46 - Julie Nguyen, 12 days ago : new plots
-3a7ef4a - Julie Nguyen, 12 days ago : new plots
-93d373e - Julie Nguyen, 12 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
-9b331aa - Julie Nguyen, 12 days ago : test SVD across k's
-99d233b - Julie Nguyen, 12 days ago : new pca plots with rmse
-1f026f5 - elisabethnielsen, 12 days ago : mere k-fold
-bec24bd - elisabethnielsen, 12 days ago : k-fold i hokus pokus til at bestemme k
-d457368 - elisabethnielsen, 13 days ago : hokus pokus work
-df712cb - Julie Nguyen, 13 days ago : Undersøgt SVD relative MSE across prompts og thresholds
-a28811c - Julie Nguyen, 13 days ago : Opdateret plots til PCA analysen (explained variance ratio + cumulative explained variance)
-cf14419 - Julie Nguyen, 13 days ago : Compute explained variance ratio instead
-08ff19d - Julie Nguyen, 13 days ago : new PCA plots
-cc4ef78 - elisabethnielsen, 13 days ago : glemte ting, sorryyyy
+a721c2a - Julie Nguyen, 19 hours ago : update git log
+6641992 - Julie Nguyen, 19 hours ago : New best hyperparameter eval run
+31b5882 - Julie Nguyen, 20 hours ago : evaluate on c=45 K-means for fairness
+4d6c97f - Julie Nguyen, 22 hours ago : delete unused file
+e2778c5 - Julie Nguyen, 3 days ago : make git logs
+e3e7ddc - Julie Nguyen, 3 days ago : hokus pokus inference done
+f2cd6d8 - Julie Nguyen, 3 days ago : clean up unused files
+c42f764 - Julie Nguyen, 3 days ago : import functions from correct file
+e7ed162 - Julie Nguyen, 3 days ago : nystrom inference results
+d1f0ebd - Julie Nguyen, 3 days ago : change output path
+dd9f6ed - Julie Nguyen, 3 days ago : merge attention profs back into one file. New results
+bf5723f - Julie Nguyen, 3 days ago : attention hokus pokus profiling results
+5139b89 - Julie Nguyen, 3 days ago : delete old files
+d1a2a83 - Julie Nguyen, 3 days ago : results attention profiling svd, nystrom, kmeans
+37fbf62 - Julie Nguyen, 3 days ago : remove scheduler in profiling
+29cef79 - Julie Nguyen, 3 days ago : results SVD Nystrom, naive attention, flash attention
+a8ce645 - Julie Nguyen, 3 days ago : results SVD methods + kmeans
+a20b413 - Julie Nguyen, 3 days ago : make seperate flop files
+37cd5ac - Julie Nguyen, 3 days ago : clusters = 8
+8a148a2 - Julie Nguyen, 3 days ago : run nystrom inference with k=45
+d47dfbd - Julie Nguyen, 3 days ago : split profiling attention and inference into sub files. Make jobscripts
+a8e037e - elisabethnielsen, 3 days ago : SVD-Nystöm med k=1
+1aa665c - Julie Nguyen, 3 days ago : ask for 4 x 32 GB
+d788e55 - Julie Nguyen, 3 days ago : updated batch scripts
+cc3f899 - Julie Nguyen, 4 days ago : put training g train outside for loop
+4dadc25 - Julie Nguyen, 4 days ago : delete unsued files
+54fe0eb - Julie Nguyen, 4 days ago : new SVD nystrom plot
+6598e2b - Julie Nguyen, 4 days ago : delete old logs
+5072e41 - Julie Nguyen, 4 days ago : fix bugs
+59c9bf3 - avkollerup, 4 days ago : Hokus Pokus Inference added to profiling
+e0e8ab7 - Julie Nguyen, 4 days ago : save table per iteration
+d5720ec - Julie Nguyen, 5 days ago : fixing bugs
+9cca096 - Julie Nguyen, 5 days ago : different k plot svd nyström
+68172e2 - Julie Nguyen, 5 days ago : different c run for kmeans
+916b7e5 - avkollerup, 5 days ago : batch scribts
+d6315bd - avkollerup, 5 days ago : profiling finished, debuged, and flop count added
+122d881 - elisabethnielsen, 5 days ago : Run hokus pokus again
+cbf9059 - elisabethnielsen, 5 days ago : Hokus Pokus Inference
+b0a96fc - Julie Nguyen, 5 days ago : last last run of eval
+72c04f9 - Julie Nguyen, 5 days ago : final eval results
+bc6b02a - Liv, 5 days ago : deleted old profiling files
+e190ec5 - Liv, 5 days ago : made batch script to run profiling
+1ce5b8f - Julie Nguyen, 5 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+b4b526d - Julie Nguyen, 5 days ago : try to fix numerical instability in SVD Nyström
+eda5220 - Liv, 5 days ago : profiling for all methods
+b4c2f14 - elisabethnielsen, 5 days ago : causal llama attention matrix på rigtige haystacks
+5692c5f - avkollerup, 5 days ago : failed to save profiling : (
+c1cdc25 - Julie Nguyen, 5 days ago : delete profiling from kmeans
+f5840a0 - Julie Nguyen, 5 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+3d319b3 - Julie Nguyen, 5 days ago : more eval results
+b1efab5 - Julie Nguyen, 5 days ago : cluster analysis
+8d00004 - elisabethnielsen, 6 days ago : lama attention på toy datasæt
+2310e8f - avkollerup, 6 days ago : extra profiling
+11c6e5c - Julie Nguyen, 6 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+b695204 - Julie Nguyen, 6 days ago : include SVD Nyström in eval
+653ff24 - elisabethnielsen, 6 days ago : llama attention matrix, ved ikke om det virker, kan ikke
+055819a - Julie Nguyen, 6 days ago : kmeans relative RMSE over cluster list analysis
+f60ef13 - Julie Nguyen, 6 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+6a767d0 - Julie Nguyen, 6 days ago : cap max num of clusters to seq len
+a494970 - elisabethnielsen, 6 days ago : llama attention matrix (ikke færdig, kan ikke køre det)
+addbfc6 - Julie Nguyen, 6 days ago : delete unused file
+dbe16b8 - Julie Nguyen, 6 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+99fff66 - Julie Nguyen, 6 days ago : remove unsused plots. Plot relative RMSE
+6c0214a - Julie Nguyen, 6 days ago : K-means analysis over cluster list
+b8de044 - Julie Nguyen, 6 days ago : load model from saved weights
+5179f16 - Julie Nguyen, 6 days ago : new eval run
+71c6122 - elisabethnielsen, 6 days ago : toy datasæt attention matrix
+bb5fe5c - avkollerup, 6 days ago : profiling in eval
+bf3fddd - avkollerup, 6 days ago : Merge branch 'profiling'
+49ae601 - avkollerup, 7 days ago : profiling
+d165ba5 - Liv, 6 days ago : changed to get_random_messages in head_level_eval
+5143194 - Julie Nguyen, 7 days ago : uv sync
+f0e0294 - Julie Nguyen, 7 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+66a24a7 - Julie Nguyen, 7 days ago : big evaluation run of the 6 methods
+dd1dd5d - elisabethnielsen, 7 days ago : Merge remote-tracking branch 'origin/main' into attention_matrix
+1c1e18b - elisabethnielsen, 7 days ago : færdige (forhåbentlig) attention matricer
+8fa7072 - elisabethnielsen, 8 days ago : mere arbejde på attention matrix
+15a36df - Julie Nguyen, 9 days ago : submit for different number of epochs
+16a3d83 - Julie Nguyen, 9 days ago : update eval job name
+0580f74 - Julie Nguyen, 9 days ago : batch script to run evaluation
+52c612b - Julie Nguyen, 9 days ago : run training over epochs and with early stopping. Save model and plot with epoch num in path
+7a3800b - Julie Nguyen, 10 days ago : print extra line
+c390c5e - Julie Nguyen, 10 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+8f77278 - Julie Nguyen, 10 days ago : fix plotting y axis
+e465373 - Julie Nguyen, 10 days ago : results for statistical test
+045cd9f - Julie Nguyen, 10 days ago : SVD results
+f2b293c - Julie Nguyen, 10 days ago : trained g (1 pass)
+0ec77c7 - Julie Nguyen, 10 days ago : Do Wilcoxon test on the RMSE values
+59e8d88 - Julie Nguyen, 10 days ago : make function to get RMSE values from each method over test prompts
+1ea3da7 - Julie Nguyen, 10 days ago : Add statsmodels package
+d9ef07d - Julie Nguyen, 10 days ago : New results
+07821ef - elisabethnielsen, 10 days ago : forsøg på attention matrix
+1549b2b - Liv, 10 days ago : Changed names of A and B in SVD-Nystrom
+de67d06 - avkollerup, 10 days ago : profiling needs to be in other files
+e4736c1 - avkollerup, 10 days ago : Beginning steps of profiling - added to nystrom
+44eaa48 - Julie Nguyen, 10 days ago : new results. Rename PCA to SVD (because we dont center the matrix)
+eb31011 - Liv, 10 days ago : diverse test af inferens
+4d29521 - elisabethnielsen, 11 days ago : finder bedste k. Spoiler, det er 45
+d7855f7 - Julie Nguyen, 12 days ago : new SVD results and plots
+5ec7412 - Julie Nguyen, 12 days ago : fix plot title and ylabel
+6145e77 - Julie Nguyen, 12 days ago : new plot
+e6dffaa - Julie Nguyen, 12 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+7547e62 - Julie Nguyen, 12 days ago : analysis across companies
+145b0bd - elisabethnielsen, 12 days ago : resultater fra 9-fold CV på hokus pokus for k
+727e2d5 - Julie Nguyen, 12 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+6287bd0 - Julie Nguyen, 12 days ago : analysis across companies
+7dd0226 - elisabethnielsen, 12 days ago : 9-fold CV på hokus pokus for at bestemme bedste k
+369746d - Liv, 12 days ago : tilføjede Anders' dokument
+db72ffa - elisabethnielsen, 12 days ago : sqrt
+ec00dc8 - Julie Nguyen, 12 days ago : Nyströmer
+30f0b37 - Liv, 12 days ago : tilføjede inference for hokus pokus
+ab9f15a - Julie Nguyen, 13 days ago : delete old threshold code
+2219e46 - Julie Nguyen, 13 days ago : new plots
+3a7ef4a - Julie Nguyen, 13 days ago : new plots
+93d373e - Julie Nguyen, 13 days ago : Merge branch 'main' of https://github.com/avkollerup/Fagprojekt-2026
+9b331aa - Julie Nguyen, 13 days ago : test SVD across k's
+99d233b - Julie Nguyen, 13 days ago : new pca plots with rmse
+1f026f5 - elisabethnielsen, 13 days ago : mere k-fold
+bec24bd - elisabethnielsen, 13 days ago : k-fold i hokus pokus til at bestemme k
+d457368 - elisabethnielsen, 2 weeks ago : hokus pokus work
+df712cb - Julie Nguyen, 2 weeks ago : Undersøgt SVD relative MSE across prompts og thresholds
+a28811c - Julie Nguyen, 2 weeks ago : Opdateret plots til PCA analysen (explained variance ratio + cumulative explained variance)
+cf14419 - Julie Nguyen, 2 weeks ago : Compute explained variance ratio instead
+08ff19d - Julie Nguyen, 2 weeks ago : new PCA plots
+cc4ef78 - elisabethnielsen, 2 weeks ago : glemte ting, sorryyyy
 42af4bd - Julie Nguyen, 2 weeks ago : Threshold tuning
 c913e53 - Julie Nguyen, 2 weeks ago : Relative MSE and explained variance. Choose k wrt treshold
-fdd5b04 - Liv, 2 weeks ago : Added code to use kv-cache with SVD decomposition
-ca8f4f9 - Liv, 2 weeks ago : Added random positioning of needle for the eval
+fdd5b04 - Liv, 3 weeks ago : Added code to use kv-cache with SVD decomposition
+ca8f4f9 - Liv, 3 weeks ago : Added random positioning of needle for the eval
 499592a - Liv, 6 weeks ago : startede new batch job with 300 tokens after last failed
 85cf60b - avkollerup, 7 weeks ago : pca analysis
 b40966f - Julie Nguyen, 7 weeks ago : PCA plots
@@ -193,8 +194,8 @@ d836c79 - Julie Nguyen, 10 weeks ago : Compute true attention values
 4d51f3e - Julie Nguyen, 10 weeks ago : get text and needles from the txt files to input in messages
 48f0449 - Julie Nguyen, 10 weeks ago : Add doc strings
 c49912a - Julie Nguyen, 10 weeks ago : change masking i SVD
-5213718 - Julie Nguyen, 2 months ago : Do SVD and truncate. Calculate attention weights
-c1a871f - Julie Nguyen, 2 months ago : update readme
+5213718 - Julie Nguyen, 3 months ago : Do SVD and truncate. Calculate attention weights
+c1a871f - Julie Nguyen, 3 months ago : update readme
 4200d58 - Julie Thanh Thanh Nguyen, 3 months ago : Data download and clean
 78e4c3b - Julie Thanh Thanh Nguyen, 3 months ago : small index bug
 680076f - Julie Thanh Thanh Nguyen, 3 months ago : fix double code
