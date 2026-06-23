@@ -120,7 +120,7 @@ def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=N
     results = []
 
     n_layers = len(model.model.layers) if num_layers is None else num_layers
-    n_heads = model.config.num_key_value_heads if num_heads is None else num_heads
+    n_heads = model.config.num_key_value_heads if num_heads is None else num_heads # BUG: This should be model.config.num_attention_heads, not num_key_value_heads
 
     total_iters = n_layers * n_heads
 
@@ -131,7 +131,7 @@ def find_needle_heads(model, tokenizer, messages, needle, top_k=20, num_layers=N
 
         key_head, value_head, query_head = get_kvq(messages, layer_idx=layer_idx, head_idx=head_idx, want_print=False, model=model, tokenizer=tokenizer)
 
-        A = get_true_attention_weights(key_head, query_head, value_head)
+        A = get_true_attention_weights(key_head, query_head, value_head) # BUG: K and Q are swapped in the original code. It should be get_true_attention_weights(query_head, key_head, value_head)
 
         q_idx = -1
 
